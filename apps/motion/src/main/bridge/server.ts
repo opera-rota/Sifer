@@ -1,7 +1,7 @@
 import { createServer, type IncomingMessage, type Server } from 'node:http';
 import type { Duplex } from 'node:stream';
 import { WebSocketServer, type WebSocket } from 'ws';
-import type { ReadOutcome } from '../../shared/bridge';
+import type { ReadOutcome, ReadScope } from '../../shared/bridge';
 import type { Point } from '../drag';
 import {
   bridgeHost,
@@ -16,6 +16,7 @@ import {
 } from './protocol';
 
 export const domReadTimeout = 800;
+export const domPageTimeout = 1500;
 export const pairCooldown = 10_000;
 export const heartbeatInterval = 15_000;
 export const maxMessageBytes = 1024 * 1024;
@@ -32,6 +33,7 @@ export interface BridgeDependencies {
   port?: number;
   origin?: string;
   readTimeout?: number;
+  pageTimeout?: number;
   now?: () => number;
 }
 
@@ -48,7 +50,10 @@ function refuse(socket: Duplex, status: 401 | 403 | 404 | 409): void {
 export function createBridge(dependencies: BridgeDependencies) {
   let port = dependencies.port ?? bridgePort;
   const origin = dependencies.origin ?? extensionOrigin;
-  const readTimeout = dependencies.readTimeout ?? domReadTimeout;
+  const timeouts: Record<ReadScope, number> = {
+    point: dependencies.readTimeout ?? domReadTimeout,
+    page: dependencies.pageTimeout ?? domPageTimeout,
+  };
   const now = dependencies.now ?? Date.now;
   const pending = new Map<number, (outcome: ReadOutcome | null) => void>();
   const sockets = new WeakMap<WebSocket, BridgeAccess>();
@@ -238,14 +243,14 @@ export function createBridge(dependencies: BridgeDependencies) {
       server = null;
       return new Promise((resolve) => (closing ? closing.close(() => resolve()) : resolve()));
     },
-    read(point: Point, title: string): Promise<ReadOutcome | null> {
+    read(point: Point, title: string, scope: ReadScope): Promise<ReadOutcome | null> {
       const target = session;
       if (!target) {
         return Promise.resolve(null);
       }
       const id = nextId++;
       return new Promise((resolve) => {
-        const timer = setTimeout(() => settle(null), readTimeout);
+        const timer = setTimeout(() => settle(null), timeouts[scope]);
         const settle = (outcome: ReadOutcome | null): void => {
           clearTimeout(timer);
           pending.delete(id);
@@ -258,6 +263,7 @@ export function createBridge(dependencies: BridgeDependencies) {
           x: Math.round(point.x),
           y: Math.round(point.y),
           title,
+          scope,
         });
       });
     },

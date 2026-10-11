@@ -90,6 +90,7 @@ const rpcChangedMode = 0x80010106 | 0;
 const pollInterval = 4;
 
 export const recognizeDeadline = 2500;
+export const pageRecognizeDeadline = 5500;
 
 const kernel32 = koffi.load('kernel32.dll');
 const moveMemory = kernel32.func(
@@ -177,7 +178,7 @@ export interface OcrImage {
 export class OcrUnavailable extends Error {}
 
 export interface TextRecognizer {
-  recognize(image: OcrImage): OcrLine[];
+  recognize(image: OcrImage, limit?: number): OcrLine[];
   dispose(): void;
 }
 
@@ -263,9 +264,9 @@ export function createTextRecognizer(): TextRecognizer {
       });
     };
 
-    const finished = (operation: ComObject): ComObject | null => {
+    const finished = (operation: ComObject, limit: number): ComObject | null => {
       return using(operation.query(ids.asyncInfo), (info) => {
-        const deadline = Date.now() + recognizeDeadline;
+        const deadline = Date.now() + limit;
         let status = info.int('get_Status', slots.asyncInfo.status);
         while (status === asyncStatus.started && Date.now() < deadline) {
           sleep(pollInterval);
@@ -301,7 +302,7 @@ export function createTextRecognizer(): TextRecognizer {
     };
 
     return {
-      recognize(image: OcrImage): OcrLine[] {
+      recognize(image: OcrImage, limit = recognizeDeadline): OcrLine[] {
         if (image.width > maxDimension || image.height > maxDimension) {
           throw new OcrUnavailable('image is larger than the ocr engine accepts');
         }
@@ -324,7 +325,7 @@ export function createTextRecognizer(): TextRecognizer {
             );
             const lines =
               using(operation, (pending) =>
-                using(finished(pending), (result) =>
+                using(finished(pending, limit), (result) =>
                   using(
                     result.pointerOut('get_Lines', slots.result.lines, comSignatures.getPointer),
                     (view) =>

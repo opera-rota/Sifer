@@ -1,5 +1,5 @@
 import { isReadOutcome } from '../reader/protocol';
-import type { ReadOutcome } from '../../shared/bridge';
+import type { ReadOutcome, ReadScope } from '../../shared/bridge';
 
 export const bridgeHost = '127.0.0.1';
 export const bridgePort = 8770;
@@ -19,7 +19,7 @@ export type ExtensionMessage =
 export type MotionMessage =
   | { type: 'paired'; token: string }
   | { type: 'pair-refused' }
-  | { type: 'read'; id: number; x: number; y: number; title: string };
+  | { type: 'read'; id: number; x: number; y: number; title: string; scope: ReadScope };
 
 const tokenPattern = /^[A-Za-z0-9_-]{43}$/;
 

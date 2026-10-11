@@ -1,4 +1,4 @@
-import type { ReadOutcome } from '../../shared/bridge';
+import type { ReadOutcome, ReadScope } from '../../shared/bridge';
 import type { Point } from '../drag';
 import {
   isReaderReply,
@@ -11,8 +11,10 @@ import {
 } from './protocol';
 
 export const readTimeout = 1500;
+export const pageTimeout = 2500;
 export const appTimeout = 300;
 export const ocrTimeout = 3000;
+export const pageOcrTimeout = 6000;
 
 export interface ReaderWorker {
   postMessage(request: ReadRequest): void;
@@ -23,8 +25,10 @@ export interface ReaderWorker {
 export interface ReaderClientDependencies {
   spawn(): ReaderWorker;
   timeout?: number;
+  pageTimeout?: number;
   appTimeout?: number;
   ocrTimeout?: number;
+  pageOcrTimeout?: number;
 }
 
 export interface CapturedImage {
@@ -41,9 +45,14 @@ type Outgoing = Omit<PointRequest, 'id'> | Omit<OcrRequest, 'id'>;
 export function createReaderClient(dependencies: ReaderClientDependencies) {
   const timeouts: Record<ReaderOperation, number> = {
     read: dependencies.timeout ?? readTimeout,
+    page: dependencies.pageTimeout ?? pageTimeout,
     app: dependencies.appTimeout ?? appTimeout,
     ocr: dependencies.ocrTimeout ?? ocrTimeout,
   };
+  const timeoutOf = (outgoing: Outgoing): number =>
+    outgoing.op === 'ocr' && outgoing.scope === 'page'
+      ? (dependencies.pageOcrTimeout ?? pageOcrTimeout)
+      : timeouts[outgoing.op];
   const pending = new Map<number, Settle>();
   let worker: ReaderWorker | null = null;
   let nextId = 1;
@@ -87,7 +96,7 @@ export function createReaderClient(dependencies: ReaderClientDependencies) {
       };
       const timer = setTimeout(
         () => (outgoing.op === 'app' ? settle(null, 'timeout') : discard(target, 'timeout')),
-        timeouts[outgoing.op],
+        timeoutOf(outgoing),
       );
       pending.set(id, settle);
       target.postMessage({ ...outgoing, id } as ReadRequest);
@@ -103,6 +112,9 @@ export function createReaderClient(dependencies: ReaderClientDependencies) {
     read(point: Point): Promise<ReadOutcome> {
       return outcomeOf({ op: 'read', x: Math.round(point.x), y: Math.round(point.y) });
     },
+    page(point: Point): Promise<ReadOutcome> {
+      return outcomeOf({ op: 'page', x: Math.round(point.x), y: Math.round(point.y) });
+    },
     async app(point: Point): Promise<WindowInfo | null> {
       const { reply } = await request({
         op: 'app',
@@ -111,9 +123,10 @@ export function createReaderClient(dependencies: ReaderClientDependencies) {
       });
       return reply && 'app' in reply ? reply.app : null;
     },
-    recognize(image: CapturedImage): Promise<ReadOutcome> {
+    recognize(image: CapturedImage, scope: ReadScope): Promise<ReadOutcome> {
       return outcomeOf({
         op: 'ocr',
+        scope,
         x: Math.round(image.point.x),
         y: Math.round(image.point.y),
         width: image.width,

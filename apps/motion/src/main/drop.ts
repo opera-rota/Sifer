@@ -1,14 +1,15 @@
-import type { ReadOutcome } from '../shared/bridge';
+import type { PanelContent } from '../shared/bridge';
 import { frameInterval, type Point } from './drag';
 
 export const hideSettle = 50;
 export const hideDelay = frameInterval + hideSettle;
+export const panelSettle = 6 * frameInterval;
 
 export interface DropDependencies {
-  hide(): void;
+  hide(): boolean;
   restore(): void;
   wait(milliseconds: number): Promise<void>;
-  read(point: Point): Promise<ReadOutcome>;
+  read(point: Point): Promise<PanelContent>;
 }
 
 export function dropPoint(orb: { x: number; y: number; width: number; height: number }): Point {
@@ -22,17 +23,17 @@ export function createDropReader(dependencies: DropDependencies) {
     get busy(): boolean {
       return busy;
     },
-    async read(point: Point): Promise<ReadOutcome | null> {
+    async read(point: Point): Promise<PanelContent | null> {
       if (busy) {
         return null;
       }
       busy = true;
-      dependencies.hide();
+      const panelWasOpen = dependencies.hide();
       try {
-        await dependencies.wait(hideDelay);
+        await dependencies.wait(hideDelay + (panelWasOpen ? panelSettle : 0));
         return await dependencies.read(point);
       } catch {
-        return { ok: false, reason: 'failed' };
+        return { scope: 'point', outcome: { ok: false, reason: 'failed' } };
       } finally {
         dependencies.restore();
         busy = false;

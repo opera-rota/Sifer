@@ -11,6 +11,8 @@ export interface Reading {
 
 export type ReadOutcome = { ok: true; reading: Reading } | { ok: false; reason: ReadFailure };
 
+export type ReadScope = 'point' | 'page';
+
 export interface ScreenPoint {
   readonly x: number;
   readonly y: number;
@@ -19,7 +21,7 @@ export interface ScreenPoint {
 export type MotionMessage =
   | { type: 'paired'; token: string }
   | { type: 'pair-refused' }
-  | { type: 'read'; id: number; x: number; y: number; title: string };
+  | { type: 'read'; id: number; x: number; y: number; title: string; scope: ReadScope };
 
 export type ExtensionMessage =
   | { type: 'hello'; browser: string; version: string }
@@ -31,6 +33,7 @@ export interface PageReadRequest {
   readonly x: number;
   readonly y: number;
   readonly zoom: number;
+  readonly scope: ReadScope;
 }
 
 export type Status = 'connected' | 'connecting' | 'offline' | 'unpaired' | 'pairing' | 'refused';
@@ -45,6 +48,10 @@ export const tokenProtocolPrefix = 'sifer.token.';
 
 const tokenPattern = /^[A-Za-z0-9_-]{43}$/;
 export const maxTitleLength = 512;
+
+function isScope(value: unknown): value is ReadScope {
+  return value === 'point' || value === 'page';
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -77,13 +84,15 @@ export function parseMotionMessage(raw: unknown): MotionMessage | null {
         Number.isFinite(value['x']) &&
         Number.isFinite(value['y']) &&
         typeof value['title'] === 'string' &&
-        value['title'].length <= maxTitleLength
+        value['title'].length <= maxTitleLength &&
+        isScope(value['scope'])
         ? {
             type: 'read',
             id: value['id'] as number,
             x: value['x'] as number,
             y: value['y'] as number,
             title: value['title'],
+            scope: value['scope'],
           }
         : null;
     default:
@@ -98,7 +107,8 @@ export function isPageReadRequest(value: unknown): value is PageReadRequest {
     Number.isFinite(value['x']) &&
     Number.isFinite(value['y']) &&
     Number.isFinite(value['zoom']) &&
-    (value['zoom'] as number) > 0
+    (value['zoom'] as number) > 0 &&
+    isScope(value['scope'])
   );
 }
 

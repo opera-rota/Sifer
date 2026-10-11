@@ -149,7 +149,7 @@ describe('createBridge', () => {
     socket.send(JSON.stringify({ type: 'hello', browser: 'Chrome', version: '141' }));
     await vi.waitFor(() => expect(bridge.browser).toEqual({ browser: 'Chrome', version: '141' }));
     const request = nextMessage(socket);
-    const read = bridge.read({ x: 10.4, y: 20.6 }, 'Kigali weather - Google Chrome');
+    const read = bridge.read({ x: 10.4, y: 20.6 }, 'Kigali weather - Google Chrome', 'point');
     const sent = await request;
     expect(sent).toEqual({
       type: 'read',
@@ -157,6 +157,7 @@ describe('createBridge', () => {
       x: 10,
       y: 21,
       title: 'Kigali weather - Google Chrome',
+      scope: 'point',
     });
     socket.send(JSON.stringify({ type: 'reading', id: 1, outcome: { ok: true } }));
     socket.send(
@@ -178,12 +179,12 @@ describe('createBridge', () => {
     const socket = connect(bridge, session);
     await opened(socket);
     await vi.waitFor(() => expect(bridge.connected).toBe(true));
-    await expect(bridge.read({ x: 0, y: 0 }, 'Page')).resolves.toBeNull();
+    await expect(bridge.read({ x: 0, y: 0 }, 'Page', 'point')).resolves.toBeNull();
   });
 
   it('returns nothing when no extension is connected', async () => {
     const { bridge } = await start();
-    await expect(bridge.read({ x: 0, y: 0 }, 'Page')).resolves.toBeNull();
+    await expect(bridge.read({ x: 0, y: 0 }, 'Page', 'point')).resolves.toBeNull();
   });
 
   it('keeps one session and reports when it leaves', async () => {
@@ -195,7 +196,7 @@ describe('createBridge', () => {
     await opened(second);
     expect(await firstClosed).toBe(4000);
     await vi.waitFor(() => expect(bridge.connected).toBe(true));
-    const read = bridge.read({ x: 0, y: 0 }, 'Page');
+    const read = bridge.read({ x: 0, y: 0 }, 'Page', 'point');
     second.close();
     await expect(read).resolves.toBeNull();
     await vi.waitFor(() => expect(bridge.connected).toBe(false));

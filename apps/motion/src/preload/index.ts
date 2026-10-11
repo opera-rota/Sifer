@@ -14,7 +14,7 @@ import {
   panelContentChannel,
   panelCurrentChannel,
   type OrbState,
-  type ReadOutcome,
+  type PanelContent,
   type SiferBridge,
   type SignedInState,
   type SignInResult,
@@ -50,8 +50,8 @@ const bridge: SiferBridge = {
     onChange: (listener: (state: SignedInState) => void) => subscribe(authChangedChannel, listener),
   },
   panel: {
-    current: () => ipcRenderer.invoke(panelCurrentChannel) as Promise<ReadOutcome | null>,
-    onContent: (listener: (content: ReadOutcome) => void) =>
+    current: () => ipcRenderer.invoke(panelCurrentChannel) as Promise<PanelContent | null>,
+    onContent: (listener: (content: PanelContent) => void) =>
       subscribe(panelContentChannel, listener),
     close: () => ipcRenderer.send(panelCloseChannel),
   },

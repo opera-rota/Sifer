@@ -27,6 +27,8 @@ function geometryFor(scene: Scene): Geometry {
     boxesOf: () => scene.boxes ?? [under],
     displayOf: (element) =>
       scene.inline?.some((selector) => element.matches(selector)) ? 'inline' : 'block',
+    hidden: () => false,
+    viewport: () => ({ left: 0, top: 0, right: 1000, bottom: 800 }),
   };
 }
 

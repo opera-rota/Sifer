@@ -20,6 +20,7 @@ import {
   type ScreenRect,
   type TextHit,
 } from './strategy';
+import { rootWindowAt } from './window';
 
 const point = koffi.struct('SiferUiaPoint', { x: 'int32', y: 'int32' });
 
@@ -38,10 +39,10 @@ const signatures = {
 };
 
 const slots = {
-  automation: { elementFromPoint: 7, controlViewWalker: 14 },
-  walker: { parent: 3 },
-  element: { patternAs: 14, controlType: 21, name: 23, isPassword: 35 },
-  textPattern: { rangeFromPoint: 3, rangeFromChild: 4 },
+  automation: { elementFromHandle: 6, elementFromPoint: 7, controlViewWalker: 14 },
+  walker: { parent: 3, firstChild: 4, nextSibling: 6 },
+  element: { patternAs: 14, controlType: 21, name: 23, isPassword: 35, isOffscreen: 38 },
+  textPattern: { rangeFromPoint: 3, rangeFromChild: 4, documentRange: 7 },
   textRange: { expand: 6, boundingRectangles: 10, getText: 12 },
   valuePattern: { value: 4 },
 };
@@ -156,6 +157,10 @@ class UiaNode implements AutomationNode {
     return this.#element.int('get_CurrentIsPassword', slots.element.isPassword) !== 0;
   }
 
+  isOffscreen(): boolean {
+    return this.#element.int('get_CurrentIsOffscreen', slots.element.isOffscreen) !== 0;
+  }
+
   name(): string {
     return this.#element.string('get_CurrentName', slots.element.name, signatures.getPointer) ?? '';
   }
@@ -216,18 +221,43 @@ class UiaNode implements AutomationNode {
     );
   }
 
-  parent(): AutomationNode | null {
-    const parent = this.#walker.pointerOut(
-      'GetParentElement',
-      slots.walker.parent,
-      signatures.parentOf,
-      this.#element.pointer,
+  documentText(): string | null {
+    return using(this.#pattern(patterns.text, ids.textPattern), (pattern) =>
+      using(
+        pattern.pointerOut(
+          'get_DocumentRange',
+          slots.textPattern.documentRange,
+          signatures.getPointer,
+        ),
+        textOf,
+      ),
     );
-    return parent ? new UiaNode(parent, this.#walker) : null;
+  }
+
+  parent(): AutomationNode | null {
+    return this.#walk('GetParentElement', slots.walker.parent);
+  }
+
+  firstChild(): AutomationNode | null {
+    return this.#walk('GetFirstChildElement', slots.walker.firstChild);
+  }
+
+  nextSibling(): AutomationNode | null {
+    return this.#walk('GetNextSiblingElement', slots.walker.nextSibling);
   }
 
   release(): void {
     this.#element.release();
+  }
+
+  #walk(operation: string, slot: number): AutomationNode | null {
+    const found = this.#walker.pointerOut(
+      operation,
+      slot,
+      signatures.parentOf,
+      this.#element.pointer,
+    );
+    return found ? new UiaNode(found, this.#walker) : null;
   }
 
   #pattern(id: number, iid: Guid): ComObject | null {
@@ -280,6 +310,19 @@ export function createUiAutomation(): UiAutomation {
           slots.automation.elementFromPoint,
           signatures.atPoint,
           at,
+        );
+        return element ? new UiaNode(element, walker) : null;
+      },
+      windowAt(at: Point): AutomationNode | null {
+        const handle = rootWindowAt(at);
+        if (!handle) {
+          return null;
+        }
+        const element = automation.pointerOut(
+          'ElementFromHandle',
+          slots.automation.elementFromHandle,
+          signatures.parentOf,
+          handle,
         );
         return element ? new UiaNode(element, walker) : null;
       },

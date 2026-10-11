@@ -1,6 +1,12 @@
 import type { ReadOutcome } from '../../shared/bridge';
-import { screenshotReading } from './layout';
-import { createTextRecognizer, OcrUnavailable, type TextRecognizer } from './ocr';
+import { pageReading, screenshotReading } from './layout';
+import {
+  createTextRecognizer,
+  OcrUnavailable,
+  pageRecognizeDeadline,
+  recognizeDeadline,
+  type TextRecognizer,
+} from './ocr';
 import {
   isReadRequest,
   type OcrRequest,
@@ -9,7 +15,7 @@ import {
   type ReadRequest,
   type WindowInfo,
 } from './protocol';
-import { readAt } from './strategy';
+import { pageAt, readAt, type Automation } from './strategy';
 import { createUiAutomation, type UiAutomation } from './uia';
 import { windowAt } from './window';
 
@@ -42,15 +48,18 @@ function lazy<T extends { dispose(): void }>(label: string, create: () => T) {
 const automation = lazy<UiAutomation>('ui automation', createUiAutomation);
 const recognizer = lazy<TextRecognizer>('text recognition', createTextRecognizer);
 
-function read(request: PointRequest): ReadOutcome {
+function read(
+  request: PointRequest,
+  strategy: (automation: Automation, point: { x: number; y: number }) => ReadOutcome,
+): ReadOutcome {
   const connected = automation.get();
   if (!connected) {
     return { ok: false, reason: 'unsupported' };
   }
   try {
-    return readAt(connected, { x: request.x, y: request.y });
+    return strategy(connected, { x: request.x, y: request.y });
   } catch (error) {
-    console.error('ui automation read failed', error);
+    console.error(`ui automation ${request.op} failed`, error);
     return { ok: false, reason: 'failed' };
   }
 }
@@ -69,10 +78,11 @@ function recognize(request: OcrRequest): ReadOutcome {
   if (!engine) {
     return { ok: false, reason: 'unsupported' };
   }
+  const page = request.scope === 'page';
   try {
-    const lines = engine.recognize(request);
-    console.log(`text recognition found ${lines.length} lines`);
-    return screenshotReading(lines, { x: request.x, y: request.y });
+    const lines = engine.recognize(request, page ? pageRecognizeDeadline : recognizeDeadline);
+    console.log(`text recognition found ${lines.length} lines (${request.scope})`);
+    return page ? pageReading(lines) : screenshotReading(lines, { x: request.x, y: request.y });
   } catch (error) {
     if (error instanceof OcrUnavailable) {
       return { ok: false, reason: 'unsupported' };
@@ -88,8 +98,10 @@ function answer(request: ReadRequest): ReaderReply {
       return { id: request.id, app: app(request) };
     case 'ocr':
       return { id: request.id, outcome: recognize(request) };
+    case 'page':
+      return { id: request.id, outcome: read(request, pageAt) };
     default:
-      return { id: request.id, outcome: read(request) };
+      return { id: request.id, outcome: read(request, readAt) };
   }
 }
 

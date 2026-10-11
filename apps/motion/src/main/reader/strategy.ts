@@ -5,6 +5,8 @@ export const maxReadingLength = 20_000;
 export const maxAncestors = 10;
 export const boundsTolerance = 4;
 export const maxLineHeight = 160;
+export const maxPageNodes = 400;
+export const maxPageDepth = 12;
 
 export const valueControls: ReadonlySet<number> = new Set([50003, 50004, 50016, 50030]);
 
@@ -23,16 +25,21 @@ export interface TextHit {
 export interface AutomationNode {
   controlType(): number;
   isPassword(): boolean;
+  isOffscreen(): boolean;
   name(): string;
   textAt(point: Point): TextHit | null;
   textOf(child: AutomationNode): TextHit | null;
   value(): string | null;
+  documentText(): string | null;
   parent(): AutomationNode | null;
+  firstChild(): AutomationNode | null;
+  nextSibling(): AutomationNode | null;
   release(): void;
 }
 
 export interface Automation {
   elementAt(point: Point): AutomationNode | null;
+  windowAt(point: Point): AutomationNode | null;
 }
 
 const controlNames: Readonly<Record<number, string>> = {
@@ -136,6 +143,81 @@ export function readAt(automation: Automation, point: Point): ReadOutcome {
       }
     }
     return found('name', target, target.name()) ?? { ok: false, reason: 'nothing' };
+  } finally {
+    for (const node of held) {
+      node.release();
+    }
+  }
+}
+
+function documentOf(node: AutomationNode): ReadOutcome | null {
+  try {
+    if (node.isPassword() || node.isOffscreen()) {
+      return null;
+    }
+    return found('text', node, node.documentText());
+  } catch {
+    return null;
+  }
+}
+
+function offscreen(node: AutomationNode): boolean {
+  try {
+    return node.isOffscreen();
+  } catch {
+    return true;
+  }
+}
+
+function searchWindow(root: AutomationNode, held: AutomationNode[]): ReadOutcome | null {
+  const queue: { node: AutomationNode; depth: number }[] = [{ node: root, depth: 0 }];
+  let seen = 1;
+  for (let next = queue.shift(); next; next = queue.shift()) {
+    const reading = documentOf(next.node);
+    if (reading) {
+      return reading;
+    }
+    if (next.depth >= maxPageDepth || offscreen(next.node)) {
+      continue;
+    }
+    let child = seen < maxPageNodes ? next.node.firstChild() : null;
+    while (child) {
+      held.push(child);
+      queue.push({ node: child, depth: next.depth + 1 });
+      seen += 1;
+      child = seen < maxPageNodes ? child.nextSibling() : null;
+    }
+  }
+  return null;
+}
+
+export function pageAt(automation: Automation, point: Point): ReadOutcome {
+  const held: AutomationNode[] = [];
+  try {
+    const target = automation.elementAt(point);
+    if (target) {
+      held.push(target);
+      if (target.isPassword()) {
+        return { ok: false, reason: 'protected' };
+      }
+      let node: AutomationNode | null = target;
+      for (let depth = 0; node && depth <= maxAncestors; depth += 1) {
+        const reading = documentOf(node);
+        if (reading) {
+          return reading;
+        }
+        node = depth < maxAncestors ? node.parent() : null;
+        if (node) {
+          held.push(node);
+        }
+      }
+    }
+    const root = automation.windowAt(point);
+    if (!root) {
+      return { ok: false, reason: 'nothing' };
+    }
+    held.push(root);
+    return searchWindow(root, held) ?? { ok: false, reason: 'nothing' };
   } finally {
     for (const node of held) {
       node.release();

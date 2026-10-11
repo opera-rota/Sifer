@@ -1,7 +1,14 @@
 import { EventEmitter } from 'node:events';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ReadOutcome } from '../../shared/bridge';
-import { appTimeout, createReaderClient, readTimeout } from './client';
+import {
+  appTimeout,
+  createReaderClient,
+  ocrTimeout,
+  pageOcrTimeout,
+  pageTimeout,
+  readTimeout,
+} from './client';
 import type { ReadRequest } from './protocol';
 
 class FakeWorker extends EventEmitter {
@@ -71,11 +78,34 @@ describe('createReaderClient', () => {
   it('asks which app is under a point', async () => {
     const app = client.app({ x: 10, y: 20 });
     expect(worker().sent).toEqual([{ id: 1, op: 'app', x: 10, y: 20 }]);
-    worker().emit('message', {
-      id: 1,
-      app: { process: 'chrome.exe', title: 'Inbox - Google Chrome' },
-    });
-    await expect(app).resolves.toEqual({ process: 'chrome.exe', title: 'Inbox - Google Chrome' });
+    const inbox = {
+      process: 'chrome.exe',
+      title: 'Inbox - Google Chrome',
+      frame: { x: 0, y: 0, width: 1280, height: 720 },
+      shell: false,
+      chromium: true,
+    };
+    worker().emit('message', { id: 1, app: inbox });
+    await expect(app).resolves.toEqual(inbox);
+  });
+
+  it('asks for the whole page and allows it longer than a point', async () => {
+    const page = client.page({ x: 3.2, y: 4.8 });
+    expect(worker().sent).toEqual([{ id: 1, op: 'page', x: 3, y: 5 }]);
+    vi.advanceTimersByTime(readTimeout);
+    expect(worker().terminated).toBe(false);
+    vi.advanceTimersByTime(pageTimeout - readTimeout);
+    await expect(page).resolves.toEqual({ ok: false, reason: 'timeout' });
+  });
+
+  it('sends images with their scope and gives a whole window more time', async () => {
+    const image = { width: 1, height: 1, pixels: new Uint8Array(4), point: { x: 0, y: 0 } };
+    const page = client.recognize(image, 'page');
+    expect(worker().sent[0]).toMatchObject({ op: 'ocr', scope: 'page', width: 1, height: 1 });
+    vi.advanceTimersByTime(ocrTimeout);
+    expect(worker().terminated).toBe(false);
+    vi.advanceTimersByTime(pageOcrTimeout - ocrTimeout);
+    await expect(page).resolves.toEqual({ ok: false, reason: 'timeout' });
   });
 
   it('gives up on the app question quickly but keeps the reader running', async () => {

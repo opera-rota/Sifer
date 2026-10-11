@@ -30,12 +30,14 @@ import {
   panelCloseChannel,
   panelContentChannel,
   panelCurrentChannel,
+  type PanelContent,
   type ReadOutcome,
+  type ReadScope,
   type SignedInState,
   type SignInResult,
 } from '../shared/bridge';
 import { readConfig } from './config';
-import { createDrag, frameInterval, type Point } from './drag';
+import { createDrag, frameInterval } from './drag';
 import { createDropReader, dropPoint } from './drop';
 import { createGoogleSignIn, GoogleSignInError } from './google';
 import { createIdentityClient, IdentityError } from './identity';
@@ -44,9 +46,9 @@ import { createBridge, type Bridge } from './bridge/server';
 import { createTokenStore } from './bridge/token';
 import { createSessionManager, type SessionManager } from './session';
 import { panelPlacement, panelSize, panelWindowOptions } from './panel';
-import { contextMargin, createScreenCapture } from './reader/capture';
+import { contextMargin, createScreenCapture, type DipRect } from './reader/capture';
 import { createReadChain } from './reader/chain';
-import { createReaderClient } from './reader/client';
+import { createReaderClient, type CapturedImage } from './reader/client';
 import { signInWindowOptions } from './signin';
 import { trayIcon } from './icon';
 import { trayMenu, trayTooltip, type TrayState } from './tray';
@@ -214,7 +216,7 @@ if (!app.requestSingleInstanceLock()) {
   let quitting = false;
   let activity: Activity = 'idle';
   let panel: BrowserWindow | null = null;
-  let panelContent: ReadOutcome | null = null;
+  let panelContent: PanelContent | null = null;
   let bridge: Bridge | null = null;
 
   const reader =
@@ -243,43 +245,59 @@ if (!app.requestSingleInstanceLock()) {
       ),
   });
 
-  const screenshot = async (dip: Point): Promise<ReadOutcome> => {
+  const recognizeCapture = async (
+    scope: ReadScope,
+    grab: () => Promise<CapturedImage | null>,
+  ): Promise<ReadOutcome> => {
     if (!reader) {
       return { ok: false, reason: 'unsupported' };
     }
     try {
-      const image = await capture(dip, orbSize / 2 + contextMargin);
+      const image = await grab();
       if (!image) {
-        console.error('screenshot reader: no capture');
+        console.error(`screenshot reader (${scope}): no capture`);
         return { ok: false, reason: 'nothing' };
       }
-      const outcome = await reader.recognize(image);
+      const outcome = await reader.recognize(image, scope);
       console.log(
-        `screenshot reader: ${image.width}x${image.height} at ${image.point.x},${image.point.y} -> ${outcome.ok ? 'text' : outcome.reason}`,
+        `screenshot reader (${scope}): ${image.width}x${image.height} at ${image.point.x},${image.point.y} -> ${outcome.ok ? 'text' : outcome.reason}`,
       );
       return outcome;
     } catch (error) {
-      console.error('screenshot reader failed', error);
+      console.error(`screenshot reader (${scope}) failed`, error);
       return { ok: false, reason: 'failed' };
     }
   };
 
+  const windowFrameInDip = (frame: DipRect): DipRect =>
+    process.platform === 'win32' ? screen.screenToDipRect(null, frame) : frame;
+
   const readChain = createReadChain({
     app: (physical) => (reader ? reader.app(physical) : Promise.resolve(null)),
     extensionBrowser: () => (bridge?.connected ? (bridge.browser?.browser ?? null) : null),
-    dom: (dip, title) => (bridge ? bridge.read(dip, title) : Promise.resolve(null)),
+    dom: (dip, title, scope) => (bridge ? bridge.read(dip, title, scope) : Promise.resolve(null)),
     accessibility: (physical) =>
       reader ? reader.read(physical) : Promise.resolve({ ok: false, reason: 'unsupported' }),
-    screenshot,
+    page: (physical) =>
+      reader ? reader.page(physical) : Promise.resolve({ ok: false, reason: 'unsupported' }),
+    screenshot: (dip) =>
+      recognizeCapture('point', () => capture.around(dip, orbSize / 2 + contextMargin)),
+    windowShot: (dip, frame) =>
+      recognizeCapture('page', () => capture.window(dip, windowFrameInDip(frame))),
   });
 
   const drops = createDropReader({
     hide: () => {
-      panel?.hide();
+      const panelWasOpen = Boolean(panel && !panel.isDestroyed() && panel.isVisible());
+      if (panelWasOpen) {
+        panel?.setOpacity(0);
+        panel?.hide();
+      }
       if (orb && !orb.isDestroyed()) {
         orb.setIgnoreMouseEvents(true);
         orb.setOpacity(0);
       }
+      return panelWasOpen;
     },
     restore: () => {
       if (orb && !orb.isDestroyed()) {
@@ -306,16 +324,17 @@ if (!app.requestSingleInstanceLock()) {
     return created;
   };
 
-  const showPanel = (orbBounds: Electron.Rectangle, outcome: ReadOutcome): void => {
-    panelContent = outcome;
+  const showPanel = (orbBounds: Electron.Rectangle, content: PanelContent): void => {
+    panelContent = content;
     const target = ensurePanel();
     const workArea = screen.getDisplayMatching(orbBounds).workArea;
     target.setBounds({ ...panelPlacement(orbBounds, workArea), ...panelSize });
+    target.setOpacity(1);
     if (target.webContents.isLoading()) {
       target.webContents.once('did-finish-load', () => target.showInactive());
       return;
     }
-    target.webContents.send(panelContentChannel, outcome);
+    target.webContents.send(panelContentChannel, content);
     target.showInactive();
   };
 
@@ -326,11 +345,11 @@ if (!app.requestSingleInstanceLock()) {
     const bounds = orbBoundsAt(orb.getBounds());
     activity = 'reading';
     publishOrbState();
-    const outcome = await drops.read(dropPoint(bounds));
+    const content = await drops.read(dropPoint(bounds));
     activity = 'idle';
     publishOrbState();
-    if (outcome) {
-      showPanel(bounds, outcome);
+    if (content) {
+      showPanel(bounds, content);
     }
   };
 

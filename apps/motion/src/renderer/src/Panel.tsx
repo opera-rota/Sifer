@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react';
-import type { ReadFailure, ReadingKind, ReadingSource, ReadOutcome } from '../../shared/bridge';
+import type {
+  PanelContent,
+  ReadFailure,
+  ReadingKind,
+  ReadingSource,
+  ReadScope,
+} from '../../shared/bridge';
 import './panel.css';
 
 const failureText: Record<ReadFailure, string> = {
@@ -22,12 +28,17 @@ const kindText: Record<ReadingKind, string> = {
   name: 'Label',
 };
 
+const titleText: Record<ReadScope, string> = {
+  point: 'Under the orb',
+  page: 'Whole page',
+};
+
 const close = (): void => window.sifer.panel.close();
 const separator = ` ${String.fromCharCode(183)} `;
 const closeMark = String.fromCharCode(215);
 
 export function Panel() {
-  const [content, setContent] = useState<ReadOutcome | null>(null);
+  const [content, setContent] = useState<PanelContent | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -53,15 +64,18 @@ export function Panel() {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
+  const outcome = content?.outcome ?? null;
+  const scope = content?.scope ?? 'point';
+
   return (
     <main className="panel">
       <header className="panel-header">
-        <span className="panel-title">Under the orb</span>
-        {content?.ok && (
+        <span className="panel-title">{titleText[scope]}</span>
+        {outcome?.ok && (
           <span className="panel-source">
-            {kindText[content.reading.kind]}
-            {separator}
-            {content.reading.control}
+            {scope === 'page' ? outcome.reading.control : kindText[outcome.reading.kind]}
+            {scope === 'point' && separator}
+            {scope === 'point' && outcome.reading.control}
           </span>
         )}
         <button type="button" className="panel-close" aria-label="Close" onClick={close}>
@@ -69,15 +83,15 @@ export function Panel() {
         </button>
       </header>
       <section className="panel-body" aria-live="polite">
-        {content === null && <p className="panel-note">Drop the orb on any text.</p>}
-        {content?.ok === false && <p className="panel-note">{failureText[content.reason]}</p>}
-        {content?.ok && <p className="panel-text">{content.reading.text}</p>}
+        {outcome === null && <p className="panel-note">Drop the orb on any text.</p>}
+        {outcome?.ok === false && <p className="panel-note">{failureText[outcome.reason]}</p>}
+        {outcome?.ok && <p className="panel-text">{outcome.reading.text}</p>}
       </section>
-      {content?.ok && (
+      {outcome?.ok && (
         <footer className="panel-footer">
-          {content.reading.text.length.toLocaleString()} characters
+          {outcome.reading.text.length.toLocaleString()} characters
           {separator}
-          {sourceText[content.reading.source]}
+          {sourceText[outcome.reading.source]}
         </footer>
       )}
     </main>

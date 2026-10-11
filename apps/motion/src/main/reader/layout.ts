@@ -20,6 +20,7 @@ export const columnGap = 1.8;
 export const lineGap = 0.9;
 export const heightRatio = 1.7;
 export const minimumOverlap = 0.3;
+export const paragraphBreak = 0.8;
 
 function union(rects: readonly ScreenRect[]): ScreenRect {
   const left = Math.min(...rects.map((rect) => rect.x));
@@ -152,10 +153,67 @@ export function paragraphAt(lines: readonly OcrLine[], point: Point): string {
   return block.map((segment) => segment.text).join('\n');
 }
 
-export function screenshotReading(lines: readonly OcrLine[], point: Point): ReadOutcome {
-  const text = normalizeText(paragraphAt(lines, point));
-  if (text === '') {
+function sameRow(a: ScreenRect, b: ScreenRect): boolean {
+  const shared = Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y);
+  return shared >= 0.5 * Math.min(a.height, b.height);
+}
+
+function columnsOf(all: readonly Segment[]): Segment[][] {
+  const columns: Segment[][] = [];
+  for (const segment of all.toSorted((a, b) => a.bounds.y - b.bounds.y)) {
+    const column = columns.find((candidate) => {
+      const last = candidate.at(-1);
+      return last !== undefined && overlaps(last.bounds, segment.bounds);
+    });
+    if (column) {
+      column.push(segment);
+    } else {
+      columns.push([segment]);
+    }
+  }
+  return columns.toSorted((a, b) => {
+    const first = a[0]?.bounds;
+    const second = b[0]?.bounds;
+    if (!first || !second) {
+      return 0;
+    }
+    return sameRow(first, second) ? first.x - second.x : first.y - second.y;
+  });
+}
+
+function columnText(column: readonly Segment[]): string {
+  return column
+    .map((segment, index) => {
+      const previous = column[index - 1];
+      if (!previous) {
+        return segment.text;
+      }
+      const gap = segment.bounds.y - (previous.bounds.y + previous.bounds.height);
+      const height = Math.max(segment.bounds.height, previous.bounds.height);
+      return `${gap > paragraphBreak * height ? '\n' : ''}\n${segment.text}`;
+    })
+    .join('');
+}
+
+export function pageText(lines: readonly OcrLine[]): string {
+  return columnsOf(segments(lines)).map(columnText).join('\n\n');
+}
+
+function reading(text: string, control: string): ReadOutcome {
+  const normalized = normalizeText(text);
+  if (normalized === '') {
     return { ok: false, reason: 'nothing' };
   }
-  return { ok: true, reading: { source: 'screenshot', kind: 'text', control: 'Screen', text } };
+  return {
+    ok: true,
+    reading: { source: 'screenshot', kind: 'text', control, text: normalized },
+  };
+}
+
+export function screenshotReading(lines: readonly OcrLine[], point: Point): ReadOutcome {
+  return reading(paragraphAt(lines, point), 'Screen');
+}
+
+export function pageReading(lines: readonly OcrLine[]): ReadOutcome {
+  return reading(pageText(lines), 'Window');
 }

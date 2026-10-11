@@ -3,6 +3,7 @@ import type { ReadingKind, ReadOutcome } from './protocol';
 
 export const maxReadingLength = 20_000;
 export const textTolerance = 4;
+export const maxPageNodes = 20_000;
 
 export interface Box {
   readonly left: number;
@@ -21,6 +22,8 @@ export interface Geometry {
   caretAt(point: ClientPoint): Caret | null;
   boxesOf(node: Text): readonly Box[];
   displayOf(element: Element): string;
+  hidden(element: Element): boolean;
+  viewport(): Box;
 }
 
 const inlineDisplays = new Set([
@@ -32,6 +35,8 @@ const inlineDisplays = new Set([
 ]);
 
 const buttonInputs = new Set(['button', 'submit', 'reset', 'image']);
+
+const skippedContainers = 'script, style, noscript, template, textarea, select';
 
 const controlNames: Readonly<Record<string, string>> = {
   P: 'Paragraph',
@@ -250,6 +255,69 @@ export function extractAt(geometry: Geometry, point: ClientPoint): ReadOutcome {
   return readName(hit) ?? { ok: false, reason: 'nothing' };
 }
 
+function intersects(box: Box, viewport: Box): boolean {
+  return (
+    box.right > box.left &&
+    box.bottom > box.top &&
+    box.right > viewport.left &&
+    box.left < viewport.right &&
+    box.bottom > viewport.top &&
+    box.top < viewport.bottom
+  );
+}
+
+export function extractPage(geometry: Geometry, root: Document): ReadOutcome {
+  const body = root.body;
+  if (!body) {
+    return { ok: false, reason: 'nothing' };
+  }
+  const viewport = geometry.viewport();
+  const hiddenBlocks = new Map<Element, boolean>();
+  const walker = root.createTreeWalker(body, NodeFilter.SHOW_TEXT);
+  const parts: string[] = [];
+  let length = 0;
+  let lastBlock: Element | null = null;
+  let scanned = 0;
+  for (
+    let node = walker.nextNode();
+    node && scanned < maxPageNodes && length < maxReadingLength;
+    node = walker.nextNode()
+  ) {
+    scanned += 1;
+    const text = node as Text;
+    const parent = text.parentElement;
+    if (!parent || text.data.trim() === '' || parent.closest(skippedContainers)) {
+      continue;
+    }
+    if (!geometry.boxesOf(text).some((box) => intersects(box, viewport))) {
+      continue;
+    }
+    const block = blockOf(geometry, parent);
+    let hidden = hiddenBlocks.get(block);
+    if (hidden === undefined) {
+      hidden = geometry.hidden(parent) || geometry.hidden(block);
+      hiddenBlocks.set(block, hidden);
+    }
+    if (hidden) {
+      continue;
+    }
+    const piece = text.data.replace(/\s+/g, ' ');
+    if (lastBlock !== null && block !== lastBlock) {
+      parts.push('\n');
+    }
+    parts.push(piece);
+    length += piece.length;
+    lastBlock = block;
+  }
+  const joined = parts
+    .join('')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line !== '')
+    .join('\n');
+  return reading('text', 'Page', joined) ?? { ok: false, reason: 'nothing' };
+}
+
 export function documentGeometry(document: Document): Geometry {
   return {
     elementAt: (point) => document.elementFromPoint(point.x, point.y),
@@ -267,5 +335,15 @@ export function documentGeometry(document: Document): Geometry {
       return Array.from(range.getClientRects());
     },
     displayOf: (element) => getComputedStyle(element).display,
+    hidden: (element) => {
+      const style = getComputedStyle(element);
+      return style.visibility === 'hidden' || style.opacity === '0';
+    },
+    viewport: () => ({
+      left: 0,
+      top: 0,
+      right: document.documentElement.clientWidth || window.innerWidth,
+      bottom: document.documentElement.clientHeight || window.innerHeight,
+    }),
   };
 }

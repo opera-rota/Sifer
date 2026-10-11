@@ -7,6 +7,7 @@ import {
   isToken,
   type PageReadRequest,
   type ReadOutcome,
+  type ReadScope,
   type ScreenPoint,
   type Status,
 } from '../src/protocol';
@@ -42,7 +43,7 @@ function boxOf(window: Browser.windows.Window): WindowBox | null {
   };
 }
 
-async function readPage(point: ScreenPoint, title: string): Promise<ReadOutcome> {
+async function readPage(point: ScreenPoint, title: string, scope: ReadScope): Promise<ReadOutcome> {
   const windows = await browser.windows.getAll({
     populate: true,
     windowTypes: ['normal', 'popup', 'app'],
@@ -57,7 +58,7 @@ async function readPage(point: ScreenPoint, title: string): Promise<ReadOutcome>
   }
   try {
     const zoom = await browser.tabs.getZoom(target.tabId);
-    const request: PageReadRequest = { type: 'sifer.read', x: point.x, y: point.y, zoom };
+    const request: PageReadRequest = { type: 'sifer.read', x: point.x, y: point.y, zoom, scope };
     const outcome: unknown = await browser.tabs.sendMessage(target.tabId, request, { frameId: 0 });
     return (outcome as ReadOutcome | undefined) ?? { ok: false, reason: 'nothing' };
   } catch {

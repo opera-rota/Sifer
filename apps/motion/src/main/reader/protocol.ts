@@ -1,12 +1,18 @@
-import type { ReadFailure, ReadingKind, ReadingSource, ReadOutcome } from '../../shared/bridge';
+import type {
+  ReadFailure,
+  ReadingKind,
+  ReadingSource,
+  ReadOutcome,
+  ReadScope,
+} from '../../shared/bridge';
 
-export type ReaderOperation = 'read' | 'app' | 'ocr';
+export type ReaderOperation = 'read' | 'page' | 'app' | 'ocr';
 
-export const maxImagePixels = 8_000_000;
+export const maxImagePixels = 16_000_000;
 
 export interface PointRequest {
   readonly id: number;
-  readonly op: 'read' | 'app';
+  readonly op: 'read' | 'page' | 'app';
   readonly x: number;
   readonly y: number;
 }
@@ -14,6 +20,7 @@ export interface PointRequest {
 export interface OcrRequest {
   readonly id: number;
   readonly op: 'ocr';
+  readonly scope: ReadScope;
   readonly x: number;
   readonly y: number;
   readonly width: number;
@@ -23,9 +30,19 @@ export interface OcrRequest {
 
 export type ReadRequest = PointRequest | OcrRequest;
 
+export interface WindowFrame {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
+
 export interface WindowInfo {
   readonly process: string;
   readonly title: string;
+  readonly frame: WindowFrame | null;
+  readonly shell: boolean;
+  readonly chromium: boolean;
 }
 
 export type ReaderReply =
@@ -44,6 +61,10 @@ const kinds: ReadonlySet<string> = new Set<ReadingKind>(['text', 'value', 'name'
 
 const sources: ReadonlySet<string> = new Set<ReadingSource>(['dom', 'accessibility', 'screenshot']);
 
+const pointOperations: ReadonlySet<unknown> = new Set(['read', 'page', 'app']);
+
+const scopes: ReadonlySet<unknown> = new Set<ReadScope>(['point', 'page']);
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
@@ -57,6 +78,7 @@ function isImage(value: Record<string, unknown>): boolean {
   const height = value['height'];
   const pixels = value['pixels'];
   return (
+    scopes.has(value['scope']) &&
     Number.isInteger(width) &&
     Number.isInteger(height) &&
     (width as number) > 0 &&
@@ -64,6 +86,31 @@ function isImage(value: Record<string, unknown>): boolean {
     (width as number) * (height as number) <= maxImagePixels &&
     pixels instanceof Uint8Array &&
     pixels.length === (width as number) * (height as number) * 4
+  );
+}
+
+function isFrame(value: unknown): value is WindowFrame {
+  return (
+    isRecord(value) &&
+    Number.isInteger(value['x']) &&
+    Number.isInteger(value['y']) &&
+    Number.isInteger(value['width']) &&
+    Number.isInteger(value['height']) &&
+    (value['width'] as number) > 0 &&
+    (value['height'] as number) > 0
+  );
+}
+
+function isWindowInfo(value: unknown): value is WindowInfo {
+  return (
+    isRecord(value) &&
+    typeof value['process'] === 'string' &&
+    value['process'].length <= 260 &&
+    typeof value['title'] === 'string' &&
+    value['title'].length <= 512 &&
+    (value['frame'] === null || isFrame(value['frame'])) &&
+    typeof value['shell'] === 'boolean' &&
+    typeof value['chromium'] === 'boolean'
   );
 }
 
@@ -77,7 +124,7 @@ export function isReadRequest(value: unknown): value is ReadRequest {
     return false;
   }
   const op = value['op'];
-  return op === 'read' || op === 'app' || (op === 'ocr' && isImage(value));
+  return pointOperations.has(op) || (op === 'ocr' && isImage(value));
 }
 
 export function isReadOutcome(value: unknown): value is ReadOutcome {
@@ -107,13 +154,5 @@ export function isReaderReply(value: unknown): value is ReaderReply {
   if ('outcome' in value) {
     return isReadOutcome(value['outcome']);
   }
-  const app = value['app'];
-  return (
-    app === null ||
-    (isRecord(app) &&
-      typeof app['process'] === 'string' &&
-      app['process'].length <= 260 &&
-      typeof app['title'] === 'string' &&
-      app['title'].length <= 512)
-  );
+  return value['app'] === null || isWindowInfo(value['app']);
 }

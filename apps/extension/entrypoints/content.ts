@@ -1,6 +1,6 @@
 import { browser } from 'wxt/browser';
 import { defineContentScript } from 'wxt/utils/define-content-script';
-import { documentGeometry, extractAt } from '../src/extract';
+import { documentGeometry, extractAt, extractPage } from '../src/extract';
 import { toClientPoint, type PointerSample } from '../src/locate';
 import { isPageReadRequest, type ReadOutcome } from '../src/protocol';
 
@@ -49,9 +49,13 @@ export default defineContentScript({
         message.zoom,
         sample,
       );
-      const outcome: ReadOutcome = point
-        ? extractAt(documentGeometry(document), point)
-        : { ok: false, reason: 'nothing' };
+      const geometry = documentGeometry(document);
+      const outcome: ReadOutcome =
+        message.scope === 'page'
+          ? extractPage(geometry, document)
+          : point
+            ? extractAt(geometry, point)
+            : { ok: false, reason: 'nothing' };
       sendResponse(outcome);
       return false;
     });

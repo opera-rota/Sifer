@@ -45,9 +45,16 @@ export type ReadFailure = 'nothing' | 'protected' | 'unsupported' | 'timeout' | 
 
 export type ReadOutcome = { ok: true; reading: Reading } | { ok: false; reason: ReadFailure };
 
+export type ReadScope = 'point' | 'page';
+
+export interface PanelContent {
+  readonly scope: ReadScope;
+  readonly outcome: ReadOutcome;
+}
+
 export interface PanelControls {
-  current(): Promise<ReadOutcome | null>;
-  onContent(listener: (content: ReadOutcome) => void): () => void;
+  current(): Promise<PanelContent | null>;
+  onContent(listener: (content: PanelContent) => void): () => void;
   close(): void;
 }
 

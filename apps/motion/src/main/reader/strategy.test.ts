@@ -3,7 +3,9 @@ import {
   controlName,
   covers,
   maxReadingLength,
+  maxPageNodes,
   normalizeText,
+  pageAt,
   readAt,
   type Automation,
   type AutomationNode,
@@ -14,24 +16,32 @@ interface FakeSpec {
   id: string;
   controlType?: number;
   password?: boolean;
+  offscreen?: boolean;
   name?: string;
   text?: string;
   childText?: string;
   value?: string | null;
+  document?: string | null;
   bounds?: ScreenRect[];
   parent?: FakeSpec;
+  children?: FakeSpec[];
 }
 
 const around: ScreenRect[] = [{ x: 0, y: 0, width: 100, height: 100 }];
 const elsewhere: ScreenRect[] = [{ x: 300, y: 300, width: 200, height: 40 }];
 
-function automationFor(spec: FakeSpec | null) {
+function automationFor(spec: FakeSpec | null, window: FakeSpec | null = null) {
   const released: string[] = [];
   const asked: string[] = [];
-  const node = (current: FakeSpec): AutomationNode & { id: string } => ({
+  const node = (
+    current: FakeSpec,
+    siblings: readonly FakeSpec[] = [],
+    index = 0,
+  ): AutomationNode & { id: string } => ({
     id: current.id,
     controlType: () => current.controlType ?? 50020,
     isPassword: () => current.password ?? false,
+    isOffscreen: () => current.offscreen ?? false,
     name: () => current.name ?? '',
     textAt: (point) => {
       asked.push(`${current.id} text at ${point.x},${point.y}`);
@@ -49,10 +59,25 @@ function automationFor(spec: FakeSpec | null) {
       asked.push(`${current.id} value`);
       return current.value ?? null;
     },
+    documentText: () => {
+      asked.push(`${current.id} document`);
+      return current.document ?? null;
+    },
     parent: () => (current.parent ? node(current.parent) : null),
+    firstChild: () => {
+      const children = current.children ?? [];
+      return children[0] ? node(children[0], children, 0) : null;
+    },
+    nextSibling: () => {
+      const next = siblings[index + 1];
+      return next ? node(next, siblings, index + 1) : null;
+    },
     release: () => released.push(current.id),
   });
-  const automation: Automation = { elementAt: () => (spec ? node(spec) : null) };
+  const automation: Automation = {
+    elementAt: () => (spec ? node(spec) : null),
+    windowAt: () => (window ? node(window) : null),
+  };
   return { automation, released, asked };
 }
 
@@ -200,6 +225,7 @@ describe('readAt', () => {
   it('releases every element it touched when a call throws', () => {
     const { automation, released } = automationFor({ id: 'leaf', parent: { id: 'parent' } });
     const throwing: Automation = {
+      windowAt: () => null,
       elementAt: (at) => {
         const found = automation.elementAt(at);
         return (
@@ -259,5 +285,117 @@ describe('covers', () => {
 
   it('rejects rectangles taller than a line of text', () => {
     expect(covers([{ x: 0, y: 0, width: 1900, height: 900 }], { x: 400, y: 400 })).toBe(false);
+  });
+});
+
+describe('pageAt', () => {
+  it('reads the document that holds the point', () => {
+    const { automation, released } = automationFor({
+      id: 'margin',
+      controlType: 50033,
+      parent: { id: 'document', controlType: 50030, document: 'Title\r\nBody text' },
+    });
+    expect(pageAt(automation, point)).toEqual({
+      ok: true,
+      reading: {
+        source: 'accessibility',
+        kind: 'text',
+        control: 'Document',
+        text: 'Title\nBody text',
+      },
+    });
+    expect(released).toEqual(['margin', 'document']);
+  });
+
+  it('searches the window for the first document when the point has none', () => {
+    const { automation, released } = automationFor(
+      { id: 'toolbar', controlType: 50033 },
+      {
+        id: 'window',
+        controlType: 50032,
+        children: [
+          { id: 'ribbon', controlType: 50033, children: [{ id: 'button', document: null }] },
+          { id: 'editor', controlType: 50004, document: '' },
+          { id: 'page', controlType: 50030, document: 'Report body' },
+        ],
+      },
+    );
+    expect(pageAt(automation, point)).toMatchObject({
+      ok: true,
+      reading: { control: 'Document', text: 'Report body' },
+    });
+    expect(released).toEqual(['toolbar', 'window', 'ribbon', 'editor', 'page', 'button']);
+  });
+
+  it('never reads a password field and skips protected documents', () => {
+    expect(pageAt(automationFor({ id: 'secret', password: true }).automation, point)).toEqual({
+      ok: false,
+      reason: 'protected',
+    });
+    const guarded = automationFor(
+      { id: 'pane', parent: { id: 'vault', password: true, document: 'hidden' } },
+      { id: 'window', children: [{ id: 'notes', document: 'Shopping list' }] },
+    );
+    expect(pageAt(guarded.automation, point)).toMatchObject({
+      reading: { text: 'Shopping list' },
+    });
+  });
+
+  it('skips documents that are hidden behind another tab', () => {
+    const { automation, asked } = automationFor(null, {
+      id: 'window',
+      children: [
+        { id: 'background', offscreen: true, document: 'Hidden editor' },
+        { id: 'hiddenTab', offscreen: true, children: [{ id: 'inner', document: 'Also hidden' }] },
+        { id: 'visible', document: 'What you see' },
+      ],
+    });
+    expect(pageAt(automation, point)).toMatchObject({ reading: { text: 'What you see' } });
+    expect(asked).not.toContain('background document');
+    expect(asked).not.toContain('inner document');
+  });
+
+  it('treats an element that fails as having no document', () => {
+    const { automation } = automationFor(null, {
+      id: 'window',
+      children: [{ id: 'broken' }, { id: 'good', document: 'Fine' }],
+    });
+    const flaky: Automation = {
+      elementAt: () => null,
+      windowAt: (at) => {
+        const root = automation.windowAt(at);
+        return (
+          root && {
+            ...root,
+            firstChild: () => {
+              const child = root.firstChild();
+              return (
+                child && {
+                  ...child,
+                  documentText: () => {
+                    throw new Error('gone');
+                  },
+                }
+              );
+            },
+          }
+        );
+      },
+    };
+    expect(pageAt(flaky, point)).toMatchObject({ reading: { text: 'Fine' } });
+  });
+
+  it('stops at the node limit and releases everything it fetched', () => {
+    const children = Array.from({ length: 600 }, (_, index) => ({ id: `pane${index}` }));
+    const { automation, released } = automationFor(null, { id: 'window', children });
+    expect(pageAt(automation, point)).toEqual({ ok: false, reason: 'nothing' });
+    expect(released).toHaveLength(maxPageNodes);
+  });
+
+  it('answers nothing without a window or a document', () => {
+    expect(pageAt(automationFor(null).automation, point)).toEqual({ ok: false, reason: 'nothing' });
+    expect(
+      pageAt(automationFor(null, { id: 'window', children: [{ id: 'pane' }] }).automation, point),
+    ).toEqual({ ok: false, reason: 'nothing' });
   });
 });
