@@ -1,11 +1,6 @@
 import { useEffect, useState } from 'react';
-import type {
-  PanelContent,
-  ReadFailure,
-  ReadingKind,
-  ReadingSource,
-  ReadScope,
-} from '../../shared/bridge';
+import type { PanelContent, ReadFailure, ReadingKind, ReadScope } from '../../shared/bridge';
+import { ContextPreview } from './ContextPreview';
 import './panel.css';
 
 const failureText: Record<ReadFailure, string> = {
@@ -14,12 +9,6 @@ const failureText: Record<ReadFailure, string> = {
   unsupported: 'Reading the screen is not available on this system yet.',
   timeout: 'The app under the orb did not answer in time.',
   failed: 'Sifer could not read that spot.',
-};
-
-const sourceText: Record<ReadingSource, string> = {
-  dom: 'from the page',
-  accessibility: 'from the app',
-  screenshot: 'from a screenshot',
 };
 
 const kindText: Record<ReadingKind, string> = {
@@ -82,6 +71,7 @@ export function Panel() {
           {closeMark}
         </button>
       </header>
+      {content && <ContextPreview content={content} />}
       <section className="panel-body" aria-live="polite">
         {outcome === null && <p className="panel-note">Drop the orb on any text.</p>}
         {outcome?.ok === false && <p className="panel-note">{failureText[outcome.reason]}</p>}
@@ -90,8 +80,6 @@ export function Panel() {
       {outcome?.ok && (
         <footer className="panel-footer">
           {outcome.reading.text.length.toLocaleString()} characters
-          {separator}
-          {sourceText[outcome.reading.source]}
         </footer>
       )}
     </main>

@@ -6,6 +6,7 @@ import {
   BrowserWindow,
   desktopCapturer,
   dialog,
+  globalShortcut,
   ipcMain,
   Menu,
   nativeImage,
@@ -49,6 +50,12 @@ import { panelPlacement, panelSize, panelWindowOptions } from './panel';
 import { contextMargin, createScreenCapture, type DipRect } from './reader/capture';
 import { createReadChain } from './reader/chain';
 import { createReaderClient, type CapturedImage } from './reader/client';
+import {
+  bindReadShortcut,
+  pointerAnchor,
+  readShortcutLabel,
+  type ShortcutBinding,
+} from './shortcut';
 import { signInWindowOptions } from './signin';
 import { trayIcon } from './icon';
 import { trayMenu, trayTooltip, type TrayState } from './tray';
@@ -204,6 +211,7 @@ if (!app.requestSingleInstanceLock()) {
 
   app.on('before-quit', () => {
     quitting = true;
+    readKey?.release();
     reader?.close();
     void bridge?.stop();
     tray?.destroy();
@@ -218,6 +226,7 @@ if (!app.requestSingleInstanceLock()) {
   let panel: BrowserWindow | null = null;
   let panelContent: PanelContent | null = null;
   let bridge: Bridge | null = null;
+  let readKey: ShortcutBinding | null = null;
 
   const reader =
     process.platform === 'win32'
@@ -338,18 +347,29 @@ if (!app.requestSingleInstanceLock()) {
     target.showInactive();
   };
 
-  const readUnderOrb = async (): Promise<void> => {
-    if (!orb || orb.isDestroyed() || drops.busy) {
+  const readAt = async (anchor: Electron.Rectangle): Promise<void> => {
+    if (drops.busy) {
       return;
     }
-    const bounds = orbBoundsAt(orb.getBounds());
     activity = 'reading';
     publishOrbState();
-    const content = await drops.read(dropPoint(bounds));
+    const content = await drops.read(dropPoint(anchor));
     activity = 'idle';
     publishOrbState();
     if (content) {
-      showPanel(bounds, content);
+      showPanel(anchor, content);
+    }
+  };
+
+  const readUnderOrb = async (): Promise<void> => {
+    if (orb && !orb.isDestroyed()) {
+      await readAt(orbBoundsAt(orb.getBounds()));
+    }
+  };
+
+  const readUnderPointer = async (): Promise<void> => {
+    if (orb && !orb.isDestroyed() && orb.isVisible()) {
+      await readAt(pointerAnchor(screen.getCursorScreenPoint(), orbSize));
     }
   };
 
@@ -549,6 +569,13 @@ if (!app.requestSingleInstanceLock()) {
     bridge.start().then(
       () => console.log(`bridge listening on 127.0.0.1:${bridge?.port}`),
       (error: Error) => console.error('bridge unavailable', error.message),
+    );
+
+    readKey = bindReadShortcut(globalShortcut, () => void readUnderPointer());
+    console.log(
+      readKey.active
+        ? `read shortcut ${readShortcutLabel} ready`
+        : `read shortcut ${readShortcutLabel} is taken by another app`,
     );
 
     orb = createOrb();

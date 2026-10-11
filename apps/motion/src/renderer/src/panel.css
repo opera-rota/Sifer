@@ -71,6 +71,45 @@ body {
   outline: 2px solid #3d6bff;
 }
 
+.context {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 8px 14px 0;
+  list-style: none;
+}
+
+.context-chip {
+  padding: 2px 8px;
+  border: 1px solid #343a63;
+  border-radius: 999px;
+  font-size: 11px;
+  line-height: 16px;
+  color: #aab0d8;
+  white-space: nowrap;
+}
+
+.context-app {
+  color: #e9ecff;
+  font-weight: 600;
+}
+
+.context-high {
+  border-color: #2f7d5b;
+  color: #7fe0b0;
+}
+
+.context-medium {
+  border-color: #8a6d2a;
+  color: #f0c870;
+}
+
+.context-low {
+  border-color: #8a3a3a;
+  color: #f29a9a;
+}
+
 .panel-body {
   flex: 1;
   overflow-y: auto;

@@ -214,6 +214,7 @@ describe('whole page', () => {
     const { content, calls } = chain({ app: word });
     await expect(content(dip, physical)).resolves.toEqual({
       scope: 'point',
+      app: 'Word',
       outcome: fromAccessibility,
     });
     expect(calls.page).not.toHaveBeenCalled();
@@ -229,6 +230,7 @@ describe('whole page', () => {
     });
     await expect(content(dip, physical)).resolves.toEqual({
       scope: 'page',
+      app: 'Chrome',
       outcome: { ok: true, reading: { ...visible.reading, control: chromePage.title } },
     });
     expect(calls.dom).toHaveBeenLastCalledWith(dip, chromePage.title, 'page');
@@ -285,13 +287,24 @@ describe('whole page', () => {
 
   it('keeps the point answer when the whole page has nothing either', async () => {
     const { content } = chain({ app: word, ...blank });
-    await expect(content(dip, physical)).resolves.toEqual({ scope: 'point', outcome: nothing });
+    await expect(content(dip, physical)).resolves.toEqual({
+      scope: 'point',
+      app: 'Word',
+      outcome: nothing,
+    });
   });
 
   it('never widens on the desktop, the taskbar or without a window', async () => {
-    for (const app of [windowOf('explorer.exe', 'Program Manager', true), null]) {
+    for (const [app, name] of [
+      [windowOf('explorer.exe', 'Program Manager', true), 'File Explorer'],
+      [null, null],
+    ] as const) {
       const { content, calls } = chain({ app, ...blank, page: document });
-      await expect(content(dip, physical)).resolves.toEqual({ scope: 'point', outcome: nothing });
+      await expect(content(dip, physical)).resolves.toEqual({
+        scope: 'point',
+        app: name,
+        outcome: nothing,
+      });
       expect(calls.page).not.toHaveBeenCalled();
     }
   });
@@ -306,6 +319,7 @@ describe('whole page', () => {
       });
       await expect(content(dip, physical)).resolves.toEqual({
         scope: 'point',
+        app: 'Word',
         outcome: { ok: false, reason },
       });
       expect(calls.page).not.toHaveBeenCalled();

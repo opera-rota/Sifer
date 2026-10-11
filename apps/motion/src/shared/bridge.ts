@@ -49,6 +49,7 @@ export type ReadScope = 'point' | 'page';
 
 export interface PanelContent {
   readonly scope: ReadScope;
+  readonly app: string | null;
   readonly outcome: ReadOutcome;
 }
 

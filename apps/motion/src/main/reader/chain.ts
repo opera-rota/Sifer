@@ -1,4 +1,5 @@
 import type { PanelContent, ReadOutcome, ReadScope } from '../../shared/bridge';
+import { appName } from '../../shared/context';
 import type { Point } from '../drag';
 import type { WindowFrame, WindowInfo } from './protocol';
 
@@ -119,13 +120,14 @@ export function createReadChain(dependencies: ChainDependencies) {
 
   return async (dip: Point, physical: Point): Promise<PanelContent> => {
     const window = await dependencies.app(physical);
+    const app = window ? appName(window.process) : null;
     const point = await readPoint(window, dip, physical);
     if (!isNothing(point) || window === null || window.shell) {
-      return { scope: 'point', outcome: point };
+      return { scope: 'point', app, outcome: point };
     }
     const page = await readPage(window, dip, physical);
     return page
-      ? { scope: 'page', outcome: titled(page, window.title) }
-      : { scope: 'point', outcome: point };
+      ? { scope: 'page', app, outcome: titled(page, window.title) }
+      : { scope: 'point', app, outcome: point };
   };
 }

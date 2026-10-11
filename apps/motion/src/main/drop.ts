@@ -33,7 +33,7 @@ export function createDropReader(dependencies: DropDependencies) {
         await dependencies.wait(hideDelay + (panelWasOpen ? panelSettle : 0));
         return await dependencies.read(point);
       } catch {
-        return { scope: 'point', outcome: { ok: false, reason: 'failed' } };
+        return { scope: 'point', app: null, outcome: { ok: false, reason: 'failed' } };
       } finally {
         dependencies.restore();
         busy = false;

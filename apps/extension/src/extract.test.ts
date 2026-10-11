@@ -1,15 +1,25 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { extractAt, maxReadingLength, normalizeText, type Box, type Geometry } from './extract';
+import {
+  extractAt,
+  extractPage,
+  maxReadingLength,
+  normalizeText,
+  type Box,
+  type Geometry,
+} from './extract';
 
 const point = { x: 50, y: 50 };
 const under: Box = { left: 0, top: 40, right: 200, bottom: 60 };
 const away: Box = { left: 0, top: 200, right: 200, bottom: 220 };
+const belowView: Box = { left: 0, top: 900, right: 200, bottom: 920 };
 
 interface Scene {
   hit: string | null;
   caret?: { selector: string; child?: number };
   boxes?: Box[];
   inline?: string[];
+  outside?: string[];
+  hidden?: string[];
 }
 
 function geometryFor(scene: Scene): Geometry {
@@ -24,10 +34,13 @@ function geometryFor(scene: Scene): Geometry {
     elementAt: () => (scene.hit ? document.querySelector(scene.hit) : null),
     caretAt: () =>
       scene.caret ? { node: textAt(scene.caret.selector, scene.caret.child), offset: 0 } : null,
-    boxesOf: () => scene.boxes ?? [under],
+    boxesOf: (node) =>
+      scene.outside?.some((selector) => node.parentElement?.closest(selector))
+        ? [belowView]
+        : (scene.boxes ?? [under]),
     displayOf: (element) =>
       scene.inline?.some((selector) => element.matches(selector)) ? 'inline' : 'block',
-    hidden: () => false,
+    hidden: (element) => scene.hidden?.some((selector) => element.matches(selector)) ?? false,
     viewport: () => ({ left: 0, top: 0, right: 1000, bottom: 800 }),
   };
 }
@@ -144,6 +157,52 @@ describe('extractAt', () => {
       reason: 'nothing',
     });
     expect(extractAt(geometryFor({ hit: null }), point)).toEqual({ ok: false, reason: 'nothing' });
+  });
+});
+
+describe('extractPage', () => {
+  beforeEach(() => render(''));
+
+  it('reads the visible page one block per line and skips scripts and styles', () => {
+    render(
+      '<h1>Weekly report</h1><p>Sales rose <b id="b">twelve</b> percent.</p>' +
+        '<script>var hidden = 1;</script><style>p { color: red; }</style>' +
+        '<ul><li>Kigali</li><li>Musanze</li></ul>',
+    );
+    expect(extractPage(geometryFor({ hit: null, inline: ['#b'] }), document)).toEqual({
+      ok: true,
+      reading: {
+        source: 'dom',
+        kind: 'text',
+        control: 'Page',
+        text: 'Weekly report\nSales rose twelve percent.\nKigali\nMusanze',
+      },
+    });
+  });
+
+  it('leaves out text that is scrolled out of view', () => {
+    render('<p>On screen</p><p id="below">Further down</p>');
+    expect(extractPage(geometryFor({ hit: null, outside: ['#below'] }), document)).toMatchObject({
+      reading: { text: 'On screen' },
+    });
+  });
+
+  it('leaves out hidden blocks', () => {
+    render('<nav id="menu"><p>Closed menu</p></nav><p>Article body</p>');
+    expect(
+      extractPage(geometryFor({ hit: null, hidden: ['#menu', '#menu p'] }), document),
+    ).toMatchObject({ reading: { text: 'Article body' } });
+  });
+
+  it('never includes passwords or field contents and reports nothing for an empty page', () => {
+    render(
+      '<input type="password" value="hunter2" /><textarea>private draft</textarea>' +
+        '<select><option>Rwanda</option></select>',
+    );
+    expect(extractPage(geometryFor({ hit: null }), document)).toEqual({
+      ok: false,
+      reason: 'nothing',
+    });
   });
 });
 

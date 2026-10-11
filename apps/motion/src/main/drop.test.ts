@@ -4,6 +4,7 @@ import { createDropReader, dropPoint, hideDelay, panelSettle } from './drop';
 
 const content: PanelContent = {
   scope: 'point',
+  app: 'Word',
   outcome: {
     ok: true,
     reading: { source: 'accessibility', kind: 'text', control: 'Document', text: 'Hello' },
@@ -54,6 +55,7 @@ describe('createDropReader', () => {
     const { reader, steps } = harness(() => Promise.reject(new Error('boom')));
     await expect(reader.read({ x: 1, y: 1 })).resolves.toEqual({
       scope: 'point',
+      app: null,
       outcome: { ok: false, reason: 'failed' },
     });
     expect(steps.at(-1)).toBe('restore');
