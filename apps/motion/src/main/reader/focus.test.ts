@@ -96,6 +96,17 @@ describe('focusAt', () => {
     });
   });
 
+  it('does not take the address of a focused web page as its value', () => {
+    const { automation } = automationFor({
+      controlType: 50030,
+      value: 'https://irembo.gov.rw/home/citizen/all_services',
+      selection: { text: '', bounds: [] },
+      caret: null,
+      bounds: field,
+    });
+    expect(focusAt(automation).outcome).toEqual({ ok: false, reason: 'nothing' });
+  });
+
   it('never reads a password field and reports nothing without focus', () => {
     const { automation, released } = automationFor({
       password: true,

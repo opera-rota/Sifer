@@ -10,6 +10,8 @@ export const maxPageDepth = 12;
 
 export const valueControls: ReadonlySet<number> = new Set([50003, 50004, 50016, 50030]);
 
+export const focusValueControls: ReadonlySet<number> = new Set([50003, 50004, 50016]);
+
 export interface ScreenRect {
   readonly x: number;
   readonly y: number;
@@ -287,7 +289,9 @@ export function focusAt(automation: FocusAutomation): FocusedReading {
         return { outcome, bounds: enclosing(hit.bounds) ?? box };
       }
     }
-    const value = attempt(() => target.value());
+    const value = focusValueControls.has(target.controlType())
+      ? attempt(() => target.value())
+      : null;
     const name = attempt(() => target.name());
     const outcome = found('value', target, value) ?? found('name', target, name);
     return { outcome: outcome ?? { ok: false, reason: 'nothing' }, bounds: box };

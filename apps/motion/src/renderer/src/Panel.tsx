@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react';
-import type { PanelContent, ReadFailure, ReadingKind, ReadScope } from '../../shared/bridge';
+import type {
+  PanelContent,
+  ReadFailure,
+  Reading,
+  ReadingKind,
+  ReadScope,
+} from '../../shared/bridge';
 import { ContextPreview } from './ContextPreview';
 import './panel.css';
 
@@ -29,8 +35,17 @@ function failureOf(scope: ReadScope, reason: ReadFailure): string {
     : failureText[reason];
 }
 
-const close = (): void => window.sifer.panel.close();
 const separator = ` ${String.fromCharCode(183)} `;
+
+function sourceOf(scope: ReadScope, reading: Reading): string {
+  if (scope === 'page') {
+    return reading.control;
+  }
+  const kind = kindText[reading.kind];
+  return reading.control === kind ? kind : `${kind}${separator}${reading.control}`;
+}
+
+const close = (): void => window.sifer.panel.close();
 const closeMark = String.fromCharCode(215);
 
 export function Panel() {
@@ -67,13 +82,7 @@ export function Panel() {
     <main className="panel">
       <header className="panel-header">
         <span className="panel-title">{titleText[scope]}</span>
-        {outcome?.ok && (
-          <span className="panel-source">
-            {scope === 'page' ? outcome.reading.control : kindText[outcome.reading.kind]}
-            {scope !== 'page' && separator}
-            {scope !== 'page' && outcome.reading.control}
-          </span>
-        )}
+        {outcome?.ok && <span className="panel-source">{sourceOf(scope, outcome.reading)}</span>}
         <button type="button" className="panel-close" aria-label="Close" onClick={close}>
           {closeMark}
         </button>
