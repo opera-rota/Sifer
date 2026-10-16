@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
   extractAt,
+  extractFocus,
   extractPage,
   maxReadingLength,
   normalizeText,
@@ -202,6 +203,81 @@ describe('extractPage', () => {
     expect(extractPage(geometryFor({ hit: null }), document)).toEqual({
       ok: false,
       reason: 'nothing',
+    });
+  });
+});
+
+describe('extractFocus', () => {
+  beforeEach(() => {
+    render('');
+    document.getSelection()?.removeAllRanges();
+  });
+
+  const focusOn = (selector: string): void => {
+    const element = document.querySelector<HTMLElement>(selector);
+    if (!element) {
+      throw new Error(`no ${selector}`);
+    }
+    element.focus();
+  };
+
+  it('reads the focused field with its label', () => {
+    render('<label for="d">District</label><input id="d" value="Gasabo" />');
+    focusOn('#d');
+    expect(extractFocus(geometryFor({ hit: null }), document)).toEqual({
+      ok: true,
+      reading: { source: 'dom', kind: 'value', control: 'Field', text: 'District: Gasabo' },
+    });
+  });
+
+  it('never reads a focused password field', () => {
+    render('<input id="p" type="password" value="hunter2" />');
+    focusOn('#p');
+    expect(extractFocus(geometryFor({ hit: null }), document)).toEqual({
+      ok: false,
+      reason: 'protected',
+    });
+  });
+
+  it('prefers selected page text, and reports nothing when nothing is focused', () => {
+    render('<p id="p">Applications close on Friday.</p>');
+    expect(extractFocus(geometryFor({ hit: null }), document)).toEqual({
+      ok: false,
+      reason: 'nothing',
+    });
+    const range = document.createRange();
+    range.selectNodeContents(document.querySelector('#p') as Node);
+    document.getSelection()?.addRange(range);
+    expect(extractFocus(geometryFor({ hit: null }), document)).toEqual({
+      ok: true,
+      reading: {
+        source: 'dom',
+        kind: 'text',
+        control: 'Selection',
+        text: 'Applications close on Friday.',
+      },
+    });
+  });
+
+  it('reads the paragraph at the caret inside a rich editor', () => {
+    render(
+      '<div id="e" contenteditable="true" tabindex="0"><p>First draft.</p><p id="second">Second paragraph.</p></div>',
+    );
+    focusOn('#e');
+    const caret = document.createRange();
+    caret.setStart(document.querySelector('#second')?.firstChild as Node, 3);
+    document.getSelection()?.removeAllRanges();
+    document.getSelection()?.addRange(caret);
+    expect(extractFocus(geometryFor({ hit: null }), document)).toMatchObject({
+      reading: { kind: 'text', control: 'Paragraph', text: 'Second paragraph.' },
+    });
+  });
+
+  it('names a focused button', () => {
+    render('<button id="b">Submit application</button>');
+    focusOn('#b');
+    expect(extractFocus(geometryFor({ hit: null }), document)).toMatchObject({
+      reading: { kind: 'name', control: 'Button', text: 'Submit application' },
     });
   });
 });

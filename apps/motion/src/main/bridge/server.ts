@@ -17,6 +17,7 @@ import {
 
 export const domReadTimeout = 800;
 export const domPageTimeout = 1500;
+export const domFocusTimeout = 800;
 export const pairCooldown = 10_000;
 export const heartbeatInterval = 15_000;
 export const maxMessageBytes = 1024 * 1024;
@@ -34,6 +35,7 @@ export interface BridgeDependencies {
   origin?: string;
   readTimeout?: number;
   pageTimeout?: number;
+  focusTimeout?: number;
   now?: () => number;
 }
 
@@ -53,6 +55,7 @@ export function createBridge(dependencies: BridgeDependencies) {
   const timeouts: Record<ReadScope, number> = {
     point: dependencies.readTimeout ?? domReadTimeout,
     page: dependencies.pageTimeout ?? domPageTimeout,
+    focus: dependencies.focusTimeout ?? domFocusTimeout,
   };
   const now = dependencies.now ?? Date.now;
   const pending = new Map<number, (outcome: ReadOutcome | null) => void>();

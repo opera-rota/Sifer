@@ -21,6 +21,8 @@ export const lineGap = 0.9;
 export const heightRatio = 1.7;
 export const minimumOverlap = 0.3;
 export const paragraphBreak = 0.8;
+export const wrapRatio = 0.85;
+export const wrapWords = 5;
 
 function union(rects: readonly ScreenRect[]): ScreenRect {
   const left = Math.min(...rects.map((rect) => rect.x));
@@ -64,6 +66,34 @@ export function segments(lines: readonly OcrLine[]): Segment[] {
     result.push(segmentOf(current));
   }
   return result;
+}
+
+const codeEnding = /[;{}]$/;
+
+function wordCount(text: string): number {
+  return text.split(/\s+/).filter((word) => word !== '').length;
+}
+
+export function joinLines(block: readonly Segment[]): string {
+  const left = Math.min(...block.map((line) => line.bounds.x));
+  const reach = (line: Segment): number => line.bounds.x + line.bounds.width - left;
+  const widest = Math.max(...block.map(reach));
+  return block
+    .map((line, index) => {
+      const previous = block[index - 1];
+      if (!previous) {
+        return line.text;
+      }
+      const wrapped =
+        reach(previous) >= widest * wrapRatio &&
+        wordCount(previous.text) >= wrapWords &&
+        !codeEnding.test(previous.text);
+      if (!wrapped) {
+        return `\n${line.text}`;
+      }
+      return previous.text.endsWith('-') ? line.text : ` ${line.text}`;
+    })
+    .join('');
 }
 
 function distance(rect: ScreenRect, point: Point): number {
@@ -150,7 +180,7 @@ export function paragraphAt(lines: readonly OcrLine[], point: Point): string {
       edge = next;
     }
   }
-  return block.map((segment) => segment.text).join('\n');
+  return joinLines(block);
 }
 
 function sameRow(a: ScreenRect, b: ScreenRect): boolean {
@@ -182,17 +212,19 @@ function columnsOf(all: readonly Segment[]): Segment[][] {
 }
 
 function columnText(column: readonly Segment[]): string {
-  return column
-    .map((segment, index) => {
-      const previous = column[index - 1];
-      if (!previous) {
-        return segment.text;
-      }
-      const gap = segment.bounds.y - (previous.bounds.y + previous.bounds.height);
-      const height = Math.max(segment.bounds.height, previous.bounds.height);
-      return `${gap > paragraphBreak * height ? '\n' : ''}\n${segment.text}`;
-    })
-    .join('');
+  const paragraphs: Segment[][] = [];
+  for (const segment of column) {
+    const current = paragraphs.at(-1);
+    const previous = current?.at(-1);
+    const gap = previous ? segment.bounds.y - (previous.bounds.y + previous.bounds.height) : 0;
+    const height = previous ? Math.max(segment.bounds.height, previous.bounds.height) : 0;
+    if (current && gap <= paragraphBreak * height) {
+      current.push(segment);
+    } else {
+      paragraphs.push([segment]);
+    }
+  }
+  return paragraphs.map(joinLines).join('\n\n');
 }
 
 export function pageText(lines: readonly OcrLine[]): string {

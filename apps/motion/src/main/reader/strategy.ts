@@ -96,7 +96,11 @@ export function covers(
   );
 }
 
-function found(kind: ReadingKind, node: AutomationNode, raw: string | null): ReadOutcome | null {
+function found(
+  kind: ReadingKind,
+  node: { controlType(): number },
+  raw: string | null,
+): ReadOutcome | null {
   const text = raw === null ? '' : normalizeText(raw);
   if (text === '') {
     return null;
@@ -222,5 +226,72 @@ export function pageAt(automation: Automation, point: Point): ReadOutcome {
     for (const node of held) {
       node.release();
     }
+  }
+}
+
+export interface FocusedElement {
+  controlType(): number;
+  isPassword(): boolean;
+  name(): string;
+  value(): string | null;
+  selection(): TextHit | null;
+  caret(): TextHit | null;
+  bounds(): ScreenRect | null;
+  release(): void;
+}
+
+export interface FocusAutomation {
+  focused(): FocusedElement | null;
+}
+
+export interface FocusedReading {
+  readonly outcome: ReadOutcome;
+  readonly bounds: ScreenRect | null;
+}
+
+export function enclosing(rects: readonly ScreenRect[]): ScreenRect | null {
+  const usable = rects.filter((rect) => rect.width > 0 && rect.height > 0);
+  if (usable.length === 0) {
+    return null;
+  }
+  const left = Math.floor(Math.min(...usable.map((rect) => rect.x)));
+  const top = Math.floor(Math.min(...usable.map((rect) => rect.y)));
+  const right = Math.ceil(Math.max(...usable.map((rect) => rect.x + rect.width)));
+  const bottom = Math.ceil(Math.max(...usable.map((rect) => rect.y + rect.height)));
+  return { x: left, y: top, width: right - left, height: bottom - top };
+}
+
+function attempt<T>(read: () => T): T | null {
+  try {
+    return read();
+  } catch {
+    return null;
+  }
+}
+
+export function focusAt(automation: FocusAutomation): FocusedReading {
+  const target = automation.focused();
+  if (!target) {
+    return { outcome: { ok: false, reason: 'nothing' }, bounds: null };
+  }
+  try {
+    const own = attempt(() => target.bounds());
+    const box = own ? enclosing([own]) : null;
+    if (target.isPassword()) {
+      return { outcome: { ok: false, reason: 'protected' }, bounds: box };
+    }
+    for (const read of [() => target.selection(), () => target.caret()]) {
+      const hit = attempt(read);
+      const outcome = hit ? found('text', target, hit.text) : null;
+      if (hit && outcome) {
+        return { outcome, bounds: enclosing(hit.bounds) ?? box };
+      }
+    }
+    const value = attempt(() => target.value());
+    const name = attempt(() => target.name());
+    const outcome = found('value', target, value) ?? found('name', target, name);
+    return { outcome: outcome ?? { ok: false, reason: 'nothing' }, bounds: box };
+  } finally {
+    target.release();
   }
 }

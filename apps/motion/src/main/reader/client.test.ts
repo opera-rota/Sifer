@@ -75,6 +75,26 @@ describe('createReaderClient', () => {
     await expect(second).resolves.toEqual({ ok: false, reason: 'nothing' });
   });
 
+  it('asks for the foreground window and the focused element', async () => {
+    const window = client.foreground();
+    const focus = client.focus();
+    expect(worker().sent).toEqual([
+      { id: 1, op: 'foreground', x: 0, y: 0 },
+      { id: 2, op: 'focus', x: 0, y: 0 },
+    ]);
+    worker().emit('message', { id: 1, app: null });
+    worker().emit('message', { id: 2, focus: { outcome: reading, bounds: null } });
+    await expect(window).resolves.toBeNull();
+    await expect(focus).resolves.toEqual({ outcome: reading, bounds: null });
+  });
+
+  it('times out a foreground lookup without killing the reader', async () => {
+    const window = client.foreground();
+    vi.advanceTimersByTime(appTimeout);
+    await expect(window).resolves.toBeNull();
+    expect(worker().terminated).toBe(false);
+  });
+
   it('asks which app is under a point', async () => {
     const app = client.app({ x: 10, y: 20 });
     expect(worker().sent).toEqual([{ id: 1, op: 'app', x: 10, y: 20 }]);

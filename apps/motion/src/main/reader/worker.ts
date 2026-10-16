@@ -9,15 +9,16 @@ import {
 } from './ocr';
 import {
   isReadRequest,
+  type FocusReading,
   type OcrRequest,
   type PointRequest,
   type ReaderReply,
   type ReadRequest,
   type WindowInfo,
 } from './protocol';
-import { pageAt, readAt, type Automation } from './strategy';
+import { focusAt, pageAt, readAt, type Automation } from './strategy';
 import { createUiAutomation, type UiAutomation } from './uia';
-import { windowAt } from './window';
+import { foregroundWindow, windowAt } from './window';
 
 const port = process.parentPort;
 if (!port) {
@@ -64,9 +65,22 @@ function read(
   }
 }
 
-function app(request: PointRequest): WindowInfo | null {
+function focus(): FocusReading {
+  const connected = automation.get();
+  if (!connected) {
+    return { outcome: { ok: false, reason: 'unsupported' }, bounds: null };
+  }
   try {
-    return windowAt({ x: request.x, y: request.y });
+    return focusAt(connected);
+  } catch (error) {
+    console.error('ui automation focus failed', error);
+    return { outcome: { ok: false, reason: 'failed' }, bounds: null };
+  }
+}
+
+function lookup(find: () => WindowInfo | null): WindowInfo | null {
+  try {
+    return find();
   } catch (error) {
     console.error('window lookup failed', error);
     return null;
@@ -95,7 +109,11 @@ function recognize(request: OcrRequest): ReadOutcome {
 function answer(request: ReadRequest): ReaderReply {
   switch (request.op) {
     case 'app':
-      return { id: request.id, app: app(request) };
+      return { id: request.id, app: lookup(() => windowAt({ x: request.x, y: request.y })) };
+    case 'foreground':
+      return { id: request.id, app: lookup(foregroundWindow) };
+    case 'focus':
+      return { id: request.id, focus: focus() };
     case 'ocr':
       return { id: request.id, outcome: recognize(request) };
     case 'page':

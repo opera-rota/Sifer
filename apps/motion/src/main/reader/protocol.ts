@@ -1,18 +1,20 @@
 import type {
+  ImageScope,
   ReadFailure,
   ReadingKind,
   ReadingSource,
   ReadOutcome,
-  ReadScope,
 } from '../../shared/bridge';
 
-export type ReaderOperation = 'read' | 'page' | 'app' | 'ocr';
+export type PointOperation = 'read' | 'page' | 'app' | 'focus' | 'foreground';
+
+export type ReaderOperation = PointOperation | 'ocr';
 
 export const maxImagePixels = 16_000_000;
 
 export interface PointRequest {
   readonly id: number;
-  readonly op: 'read' | 'page' | 'app';
+  readonly op: PointOperation;
   readonly x: number;
   readonly y: number;
 }
@@ -20,7 +22,7 @@ export interface PointRequest {
 export interface OcrRequest {
   readonly id: number;
   readonly op: 'ocr';
-  readonly scope: ReadScope;
+  readonly scope: ImageScope;
   readonly x: number;
   readonly y: number;
   readonly width: number;
@@ -45,8 +47,14 @@ export interface WindowInfo {
   readonly chromium: boolean;
 }
 
+export interface FocusReading {
+  readonly outcome: ReadOutcome;
+  readonly bounds: WindowFrame | null;
+}
+
 export type ReaderReply =
   | { readonly id: number; readonly outcome: ReadOutcome }
+  | { readonly id: number; readonly focus: FocusReading }
   | { readonly id: number; readonly app: WindowInfo | null };
 
 const failures: ReadonlySet<string> = new Set<ReadFailure>([
@@ -61,9 +69,15 @@ const kinds: ReadonlySet<string> = new Set<ReadingKind>(['text', 'value', 'name'
 
 const sources: ReadonlySet<string> = new Set<ReadingSource>(['dom', 'accessibility', 'screenshot']);
 
-const pointOperations: ReadonlySet<unknown> = new Set(['read', 'page', 'app']);
+const pointOperations: ReadonlySet<unknown> = new Set<PointOperation>([
+  'read',
+  'page',
+  'app',
+  'focus',
+  'foreground',
+]);
 
-const scopes: ReadonlySet<unknown> = new Set<ReadScope>(['point', 'page']);
+const scopes: ReadonlySet<unknown> = new Set<ImageScope>(['point', 'page']);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -98,6 +112,14 @@ function isFrame(value: unknown): value is WindowFrame {
     Number.isInteger(value['height']) &&
     (value['width'] as number) > 0 &&
     (value['height'] as number) > 0
+  );
+}
+
+function isFocusReading(value: unknown): value is FocusReading {
+  return (
+    isRecord(value) &&
+    isReadOutcome(value['outcome']) &&
+    (value['bounds'] === null || isFrame(value['bounds']))
   );
 }
 
@@ -153,6 +175,9 @@ export function isReaderReply(value: unknown): value is ReaderReply {
   }
   if ('outcome' in value) {
     return isReadOutcome(value['outcome']);
+  }
+  if ('focus' in value) {
+    return isFocusReading(value['focus']);
   }
   return value['app'] === null || isWindowInfo(value['app']);
 }

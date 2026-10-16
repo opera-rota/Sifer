@@ -17,12 +17,20 @@ import {
   maxReadingLength,
   type Automation,
   type AutomationNode,
+  type FocusAutomation,
+  type FocusedElement,
   type ScreenRect,
   type TextHit,
 } from './strategy';
 import { rootWindowAt } from './window';
 
 const point = koffi.struct('SiferUiaPoint', { x: 'int32', y: 'int32' });
+const rect = koffi.struct('SiferUiaRect', {
+  left: 'int32',
+  top: 'int32',
+  right: 'int32',
+  bottom: 'int32',
+});
 
 const signatures = {
   getPointer: comSignatures.getPointer,
@@ -36,18 +44,47 @@ const signatures = {
   ]),
   expand: koffi.proto('__stdcall', 'SiferUiaExpand', 'int32', ['void *', 'int32']),
   getText: koffi.proto('__stdcall', 'SiferUiaGetText', 'int32', ['void *', 'int32', pointerOut]),
+  getRect: koffi.proto('__stdcall', 'SiferUiaGetRect', 'int32', [
+    'void *',
+    koffi.out(koffi.pointer(rect)),
+  ]),
+  caretRange: koffi.proto('__stdcall', 'SiferUiaCaretRange', 'int32', [
+    'void *',
+    intOut,
+    pointerOut,
+  ]),
+  elementAt: koffi.proto('__stdcall', 'SiferUiaElementAt', 'int32', [
+    'void *',
+    'int32',
+    pointerOut,
+  ]),
 };
 
 const slots = {
-  automation: { elementFromHandle: 6, elementFromPoint: 7, controlViewWalker: 14 },
+  automation: {
+    elementFromHandle: 6,
+    elementFromPoint: 7,
+    focusedElement: 8,
+    controlViewWalker: 14,
+  },
   walker: { parent: 3, firstChild: 4, nextSibling: 6 },
-  element: { patternAs: 14, controlType: 21, name: 23, isPassword: 35, isOffscreen: 38 },
-  textPattern: { rangeFromPoint: 3, rangeFromChild: 4, documentRange: 7 },
+  element: {
+    patternAs: 14,
+    controlType: 21,
+    name: 23,
+    isPassword: 35,
+    isOffscreen: 38,
+    boundingRectangle: 43,
+  },
+  textPattern: { rangeFromPoint: 3, rangeFromChild: 4, selection: 5, documentRange: 7 },
+  textPattern2: { caretRange: 10 },
+  rangeArray: { length: 3, element: 4 },
   textRange: { expand: 6, boundingRectangles: 10, getText: 12 },
   valuePattern: { value: 4 },
 };
 
-const patterns = { value: 10002, text: 10014 };
+const patterns = { value: 10002, text: 10014, text2: 10024 };
+const maxSelectionRanges = 16;
 const textUnit = { line: 3, paragraph: 4 };
 const invalidArgument = 0x80070057 | 0;
 const clsctxInprocServer = 1;
@@ -58,6 +95,7 @@ const ids = {
   cuiAutomation: parseGuid('ff48dba4-60ef-4201-aa87-54103eef594e'),
   iuiAutomation: parseGuid('30cbe57d-d9d0-452a-ab13-7ac5ac4825ee'),
   textPattern: parseGuid('32eba289-3583-42c9-9c59-3b6d9a1e9b6a'),
+  textPattern2: parseGuid('506a921a-fcc9-409f-b23b-37eb74106872'),
   valuePattern: parseGuid('a94cd8b1-0844-4cd6-9d2d-640537ab39e9'),
 };
 
@@ -134,13 +172,18 @@ function rectsOf(range: ComObject): ScreenRect[] {
   return out[0] ? takeRects(out[0]) : [];
 }
 
+function paragraphOf(range: ComObject): TextHit {
+  expand(range, textUnit.paragraph);
+  return { text: textOf(range), bounds: rectsOf(range) };
+}
+
 function textOf(range: ComObject): string {
   return (
     range.string('GetText', slots.textRange.getText, signatures.getText, maxReadingLength) ?? ''
   );
 }
 
-class UiaNode implements AutomationNode {
+class UiaNode implements AutomationNode, FocusedElement {
   readonly #element: ComObject;
   readonly #walker: ComObject;
 
@@ -215,6 +258,41 @@ class UiaNode implements AutomationNode {
     });
   }
 
+  bounds(): ScreenRect | null {
+    const box = { left: 0, top: 0, right: 0, bottom: 0 };
+    check(
+      'get_CurrentBoundingRectangle',
+      this.#element.call(slots.element.boundingRectangle, signatures.getRect, box),
+    );
+    const width = box.right - box.left;
+    const height = box.bottom - box.top;
+    return width > 0 && height > 0 ? { x: box.left, y: box.top, width, height } : null;
+  }
+
+  selection(): TextHit | null {
+    const texts: string[] = [];
+    const bounds: ScreenRect[] = [];
+    const selected = this.#eachSelected((range) => {
+      texts.push(textOf(range));
+      bounds.push(...rectsOf(range));
+      return true;
+    });
+    return selected ? { text: texts.join('\n'), bounds } : null;
+  }
+
+  caret(): TextHit | null {
+    const fromCaret = this.#caretParagraph();
+    if (fromCaret) {
+      return fromCaret;
+    }
+    const fromSelection: TextHit[] = [];
+    this.#eachSelected((range) => {
+      fromSelection.push(paragraphOf(range));
+      return false;
+    });
+    return fromSelection[0] ?? null;
+  }
+
   value(): string | null {
     return using(this.#pattern(patterns.value, ids.valuePattern), (pattern) =>
       pattern.string('get_CurrentValue', slots.valuePattern.value, signatures.getPointer),
@@ -260,6 +338,50 @@ class UiaNode implements AutomationNode {
     return found ? new UiaNode(found, this.#walker) : null;
   }
 
+  #caretParagraph(): TextHit | null {
+    try {
+      return using(this.#pattern(patterns.text2, ids.textPattern2), (pattern) => {
+        const active = [0];
+        const out: unknown[] = [null];
+        check(
+          'GetCaretRange',
+          pattern.call(slots.textPattern2.caretRange, signatures.caretRange, active, out),
+        );
+        return using(out[0] ? new ComObject(out[0]) : null, paragraphOf);
+      });
+    } catch {
+      return null;
+    }
+  }
+
+  #eachSelected(visit: (range: ComObject) => boolean): boolean {
+    return (
+      using(this.#pattern(patterns.text, ids.textPattern), (pattern) =>
+        using(
+          pattern.pointerOut('GetSelection', slots.textPattern.selection, signatures.getPointer),
+          (ranges) => {
+            const count = Math.min(
+              ranges.int('get_Length', slots.rangeArray.length),
+              maxSelectionRanges,
+            );
+            for (let index = 0; index < count; index += 1) {
+              const range = ranges.pointerOut(
+                'GetElement',
+                slots.rangeArray.element,
+                signatures.elementAt,
+                index,
+              );
+              if (using(range, visit) === false) {
+                break;
+              }
+            }
+            return true;
+          },
+        ),
+      ) ?? false
+    );
+  }
+
   #pattern(id: number, iid: Guid): ComObject | null {
     return this.#element.pointerOut(
       'GetCurrentPatternAs',
@@ -271,7 +393,7 @@ class UiaNode implements AutomationNode {
   }
 }
 
-export interface UiAutomation extends Automation {
+export interface UiAutomation extends Automation, FocusAutomation {
   dispose(): void;
 }
 
@@ -310,6 +432,14 @@ export function createUiAutomation(): UiAutomation {
           slots.automation.elementFromPoint,
           signatures.atPoint,
           at,
+        );
+        return element ? new UiaNode(element, walker) : null;
+      },
+      focused(): FocusedElement | null {
+        const element = automation.pointerOut(
+          'GetFocusedElement',
+          slots.automation.focusedElement,
+          signatures.getPointer,
         );
         return element ? new UiaNode(element, walker) : null;
       },

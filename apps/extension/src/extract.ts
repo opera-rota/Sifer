@@ -38,6 +38,9 @@ const buttonInputs = new Set(['button', 'submit', 'reset', 'image']);
 
 const skippedContainers = 'script, style, noscript, template, textarea, select';
 
+const fieldSelector =
+  'input, textarea, select, [contenteditable=""], [contenteditable="true"], [contenteditable="plaintext-only"]';
+
 const controlNames: Readonly<Record<string, string>> = {
   P: 'Paragraph',
   H1: 'Heading',
@@ -227,9 +230,7 @@ export function extractAt(geometry: Geometry, point: ClientPoint): ReadOutcome {
   if (hit.closest('input[type="password" i]')) {
     return { ok: false, reason: 'protected' };
   }
-  const field = hit.closest<HTMLElement>(
-    'input, textarea, select, [contenteditable=""], [contenteditable="true"], [contenteditable="plaintext-only"]',
-  );
+  const field = hit.closest<HTMLElement>(fieldSelector);
   if (field) {
     return readField(field) ?? { ok: false, reason: 'nothing' };
   }
@@ -253,6 +254,56 @@ export function extractAt(geometry: Geometry, point: ClientPoint): ReadOutcome {
     }
   }
   return readName(hit) ?? { ok: false, reason: 'nothing' };
+}
+
+function activeElementOf(root: Document): Element | null {
+  let active = root.activeElement;
+  while (active?.shadowRoot?.activeElement) {
+    active = active.shadowRoot.activeElement;
+  }
+  return active === root.body || active === root.documentElement ? null : active;
+}
+
+function isTextControl(element: Element): boolean {
+  return element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement;
+}
+
+function caretBlockOf(geometry: Geometry, editor: HTMLElement, root: Document): ReadOutcome | null {
+  const anchor = root.getSelection()?.anchorNode ?? null;
+  const start = anchor instanceof Element ? anchor : (anchor?.parentElement ?? null);
+  if (!start || start === editor || !editor.contains(start)) {
+    return null;
+  }
+  const block = blockOf(geometry, start);
+  return editor.contains(block) && block !== editor
+    ? reading('text', controlOf(block), textOf(block))
+    : null;
+}
+
+export function extractFocus(geometry: Geometry, root: Document): ReadOutcome {
+  const active = activeElementOf(root);
+  if (active?.closest('input[type="password" i]')) {
+    return { ok: false, reason: 'protected' };
+  }
+  const selection = root.getSelection();
+  if (selection && !selection.isCollapsed && !(active && isTextControl(active))) {
+    const selected = reading('text', 'Selection', selection.toString());
+    if (selected) {
+      return selected;
+    }
+  }
+  if (!active) {
+    return { ok: false, reason: 'nothing' };
+  }
+  const field = active.closest<HTMLElement>(fieldSelector);
+  if (field) {
+    const block =
+      isTextControl(field) || field instanceof HTMLSelectElement
+        ? null
+        : caretBlockOf(geometry, field, root);
+    return block ?? readField(field) ?? { ok: false, reason: 'nothing' };
+  }
+  return readName(active) ?? { ok: false, reason: 'nothing' };
 }
 
 function intersects(box: Box, viewport: Box): boolean {

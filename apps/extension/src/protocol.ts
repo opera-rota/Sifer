@@ -11,7 +11,7 @@ export interface Reading {
 
 export type ReadOutcome = { ok: true; reading: Reading } | { ok: false; reason: ReadFailure };
 
-export type ReadScope = 'point' | 'page';
+export type ReadScope = 'point' | 'page' | 'focus';
 
 export interface ScreenPoint {
   readonly x: number;
@@ -50,7 +50,7 @@ const tokenPattern = /^[A-Za-z0-9_-]{43}$/;
 export const maxTitleLength = 512;
 
 function isScope(value: unknown): value is ReadScope {
-  return value === 'point' || value === 'page';
+  return value === 'point' || value === 'page' || value === 'focus';
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

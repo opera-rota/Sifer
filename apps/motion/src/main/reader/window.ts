@@ -14,6 +14,7 @@ const rect = koffi.struct('SiferWindowRect', {
 const user32 = koffi.load('user32.dll');
 const dwmapi = koffi.load('dwmapi.dll');
 const windowFromPoint = user32.func('__stdcall', 'WindowFromPoint', 'void *', [point]);
+const getForegroundWindow = user32.func('void * __stdcall GetForegroundWindow()');
 const getAncestor = user32.func('void * __stdcall GetAncestor(void *window, uint32 flags)');
 const getWindowThreadProcessId = user32.func('__stdcall', 'GetWindowThreadProcessId', 'uint32', [
   'void *',
@@ -93,16 +94,15 @@ function boundsOf(window: unknown): WindowFrame | null {
   return (getWindowRect(window, plain) as number) !== 0 ? frameOf(plain) : null;
 }
 
-export function rootWindowAt(at: Point): unknown {
-  const child = windowFromPoint({ x: at.x, y: at.y }) as unknown;
-  if (!child) {
-    return null;
-  }
-  return (getAncestor(child, rootAncestor) as unknown) ?? child;
+function rootOf(window: unknown): unknown {
+  return window ? ((getAncestor(window, rootAncestor) as unknown) ?? window) : null;
 }
 
-export function windowAt(at: Point): WindowInfo | null {
-  const root = rootWindowAt(at);
+export function rootWindowAt(at: Point): unknown {
+  return rootOf(windowFromPoint({ x: at.x, y: at.y }) as unknown);
+}
+
+function infoOf(root: unknown): WindowInfo | null {
   if (!root) {
     return null;
   }
@@ -120,4 +120,12 @@ export function windowAt(at: Point): WindowInfo | null {
     shell: shellClasses.has(className),
     chromium: className.startsWith(chromiumClassPrefix),
   };
+}
+
+export function windowAt(at: Point): WindowInfo | null {
+  return infoOf(rootWindowAt(at));
+}
+
+export function foregroundWindow(): WindowInfo | null {
+  return infoOf(rootOf(getForegroundWindow() as unknown));
 }

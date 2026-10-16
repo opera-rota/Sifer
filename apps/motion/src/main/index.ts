@@ -31,9 +31,9 @@ import {
   panelCloseChannel,
   panelContentChannel,
   panelCurrentChannel,
+  type ImageScope,
   type PanelContent,
   type ReadOutcome,
-  type ReadScope,
   type SignedInState,
   type SignInResult,
 } from '../shared/bridge';
@@ -50,6 +50,7 @@ import { panelPlacement, panelSize, panelWindowOptions } from './panel';
 import { contextMargin, createScreenCapture, type DipRect } from './reader/capture';
 import { createReadChain } from './reader/chain';
 import { createReaderClient, type CapturedImage } from './reader/client';
+import { createFocusRead } from './reader/focus';
 import {
   bindReadShortcut,
   pointerAnchor,
@@ -255,7 +256,7 @@ if (!app.requestSingleInstanceLock()) {
   });
 
   const recognizeCapture = async (
-    scope: ReadScope,
+    scope: ImageScope,
     grab: () => Promise<CapturedImage | null>,
   ): Promise<ReadOutcome> => {
     if (!reader) {
@@ -281,9 +282,12 @@ if (!app.requestSingleInstanceLock()) {
   const windowFrameInDip = (frame: DipRect): DipRect =>
     process.platform === 'win32' ? screen.screenToDipRect(null, frame) : frame;
 
+  const extensionBrowser = (): string | null =>
+    bridge?.connected ? (bridge.browser?.browser ?? null) : null;
+
   const readChain = createReadChain({
     app: (physical) => (reader ? reader.app(physical) : Promise.resolve(null)),
-    extensionBrowser: () => (bridge?.connected ? (bridge.browser?.browser ?? null) : null),
+    extensionBrowser,
     dom: (dip, title, scope) => (bridge ? bridge.read(dip, title, scope) : Promise.resolve(null)),
     accessibility: (physical) =>
       reader ? reader.read(physical) : Promise.resolve({ ok: false, reason: 'unsupported' }),
@@ -293,6 +297,17 @@ if (!app.requestSingleInstanceLock()) {
       recognizeCapture('point', () => capture.around(dip, orbSize / 2 + contextMargin)),
     windowShot: (dip, frame) =>
       recognizeCapture('page', () => capture.window(dip, windowFrameInDip(frame))),
+  });
+
+  const focusRead = createFocusRead({
+    foreground: () => (reader ? reader.foreground() : Promise.resolve(null)),
+    extensionBrowser,
+    dom: (dip, title, scope) => (bridge ? bridge.read(dip, title, scope) : Promise.resolve(null)),
+    focused: () =>
+      reader
+        ? reader.focus()
+        : Promise.resolve({ outcome: { ok: false, reason: 'unsupported' }, bounds: null }),
+    toDip: windowFrameInDip,
   });
 
   const drops = createDropReader({
@@ -367,10 +382,33 @@ if (!app.requestSingleInstanceLock()) {
     }
   };
 
-  const readUnderPointer = async (): Promise<void> => {
-    if (orb && !orb.isDestroyed() && orb.isVisible()) {
-      await readAt(pointerAnchor(screen.getCursorScreenPoint(), orbSize));
+  let focusing = false;
+
+  const readFocused = async (): Promise<void> => {
+    if (!orb || orb.isDestroyed() || !orb.isVisible() || drops.busy || focusing) {
+      return;
     }
+    const pointer = pointerAnchor(screen.getCursorScreenPoint(), orbSize);
+    if (BrowserWindow.getFocusedWindow() !== null) {
+      await readAt(pointer);
+      return;
+    }
+    focusing = true;
+    activity = 'reading';
+    publishOrbState();
+    const focused = await focusRead().catch((error: unknown) => {
+      console.error('focused element read failed', error);
+      return null;
+    });
+    activity = 'idle';
+    publishOrbState();
+    focusing = false;
+    if (focused) {
+      console.log(`read shortcut: focused element in ${focused.content.app ?? 'unknown app'}`);
+      showPanel(focused.anchor ?? pointer, focused.content);
+      return;
+    }
+    await readAt(pointer);
   };
 
   const broadcast = (state: SignedInState): void => {
@@ -571,7 +609,7 @@ if (!app.requestSingleInstanceLock()) {
       (error: Error) => console.error('bridge unavailable', error.message),
     );
 
-    readKey = bindReadShortcut(globalShortcut, () => void readUnderPointer());
+    readKey = bindReadShortcut(globalShortcut, () => void readFocused());
     console.log(
       readKey.active
         ? `read shortcut ${readShortcutLabel} ready`

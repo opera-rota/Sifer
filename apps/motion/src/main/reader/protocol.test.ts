@@ -6,6 +6,8 @@ describe('isReadRequest', () => {
     expect(isReadRequest({ id: 1, op: 'read', x: -20, y: 400 })).toBe(true);
     expect(isReadRequest({ id: 2, op: 'app', x: 0, y: 0 })).toBe(true);
     expect(isReadRequest({ id: 3, op: 'page', x: 5, y: 5 })).toBe(true);
+    expect(isReadRequest({ id: 4, op: 'focus', x: 0, y: 0 })).toBe(true);
+    expect(isReadRequest({ id: 5, op: 'foreground', x: 0, y: 0 })).toBe(true);
   });
 
   it('accepts an image only with a scope and matching pixels', () => {
@@ -87,6 +89,33 @@ describe('isReaderReply', () => {
       }),
     ).toBe(true);
     expect(isReaderReply({ id: 5, app: null })).toBe(true);
+  });
+
+  it('accepts a focused reading with or without its bounds', () => {
+    expect(
+      isReaderReply({
+        id: 7,
+        focus: {
+          outcome: { ok: false, reason: 'protected' },
+          bounds: { x: 10, y: 20, width: 300, height: 28 },
+        },
+      }),
+    ).toBe(true);
+    expect(
+      isReaderReply({ id: 8, focus: { outcome: { ok: false, reason: 'nothing' }, bounds: null } }),
+    ).toBe(true);
+    expect(isReaderReply({ id: 9, focus: { outcome: { ok: false, reason: 'nothing' } } })).toBe(
+      false,
+    );
+    expect(
+      isReaderReply({
+        id: 9,
+        focus: {
+          outcome: { ok: false, reason: 'nothing' },
+          bounds: { x: 1.5, y: 0, width: 3, height: 3 },
+        },
+      }),
+    ).toBe(false);
   });
 
   it('rejects malformed replies', () => {

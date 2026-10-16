@@ -1,7 +1,8 @@
-import type { ReadOutcome, ReadScope } from '../../shared/bridge';
+import type { ImageScope, ReadOutcome } from '../../shared/bridge';
 import type { Point } from '../drag';
 import {
   isReaderReply,
+  type FocusReading,
   type OcrRequest,
   type PointRequest,
   type ReaderOperation,
@@ -13,6 +14,7 @@ import {
 export const readTimeout = 1500;
 export const pageTimeout = 2500;
 export const appTimeout = 300;
+export const focusTimeout = 1500;
 export const ocrTimeout = 3000;
 export const pageOcrTimeout = 6000;
 
@@ -27,6 +29,7 @@ export interface ReaderClientDependencies {
   timeout?: number;
   pageTimeout?: number;
   appTimeout?: number;
+  focusTimeout?: number;
   ocrTimeout?: number;
   pageOcrTimeout?: number;
 }
@@ -42,11 +45,15 @@ type Settle = (reply: ReaderReply | null, reason: 'timeout' | 'failed') => void;
 
 type Outgoing = Omit<PointRequest, 'id'> | Omit<OcrRequest, 'id'>;
 
+const lookups: ReadonlySet<ReaderOperation> = new Set<ReaderOperation>(['app', 'foreground']);
+
 export function createReaderClient(dependencies: ReaderClientDependencies) {
   const timeouts: Record<ReaderOperation, number> = {
     read: dependencies.timeout ?? readTimeout,
     page: dependencies.pageTimeout ?? pageTimeout,
     app: dependencies.appTimeout ?? appTimeout,
+    foreground: dependencies.appTimeout ?? appTimeout,
+    focus: dependencies.focusTimeout ?? focusTimeout,
     ocr: dependencies.ocrTimeout ?? ocrTimeout,
   };
   const timeoutOf = (outgoing: Outgoing): number =>
@@ -95,7 +102,7 @@ export function createReaderClient(dependencies: ReaderClientDependencies) {
         resolve({ reply, reason });
       };
       const timer = setTimeout(
-        () => (outgoing.op === 'app' ? settle(null, 'timeout') : discard(target, 'timeout')),
+        () => (lookups.has(outgoing.op) ? settle(null, 'timeout') : discard(target, 'timeout')),
         timeoutOf(outgoing),
       );
       pending.set(id, settle);
@@ -108,6 +115,11 @@ export function createReaderClient(dependencies: ReaderClientDependencies) {
     return reply && 'outcome' in reply ? reply.outcome : { ok: false, reason };
   };
 
+  const windowOf = async (outgoing: Outgoing): Promise<WindowInfo | null> => {
+    const { reply } = await request(outgoing);
+    return reply && 'app' in reply ? reply.app : null;
+  };
+
   return {
     read(point: Point): Promise<ReadOutcome> {
       return outcomeOf({ op: 'read', x: Math.round(point.x), y: Math.round(point.y) });
@@ -115,15 +127,19 @@ export function createReaderClient(dependencies: ReaderClientDependencies) {
     page(point: Point): Promise<ReadOutcome> {
       return outcomeOf({ op: 'page', x: Math.round(point.x), y: Math.round(point.y) });
     },
-    async app(point: Point): Promise<WindowInfo | null> {
-      const { reply } = await request({
-        op: 'app',
-        x: Math.round(point.x),
-        y: Math.round(point.y),
-      });
-      return reply && 'app' in reply ? reply.app : null;
+    app(point: Point): Promise<WindowInfo | null> {
+      return windowOf({ op: 'app', x: Math.round(point.x), y: Math.round(point.y) });
     },
-    recognize(image: CapturedImage, scope: ReadScope): Promise<ReadOutcome> {
+    foreground(): Promise<WindowInfo | null> {
+      return windowOf({ op: 'foreground', x: 0, y: 0 });
+    },
+    async focus(): Promise<FocusReading> {
+      const { reply, reason } = await request({ op: 'focus', x: 0, y: 0 });
+      return reply && 'focus' in reply
+        ? reply.focus
+        : { outcome: { ok: false, reason }, bounds: null };
+    },
+    recognize(image: CapturedImage, scope: ImageScope): Promise<ReadOutcome> {
       return outcomeOf({
         op: 'ocr',
         scope,

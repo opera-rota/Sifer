@@ -20,7 +20,14 @@ const kindText: Record<ReadingKind, string> = {
 const titleText: Record<ReadScope, string> = {
   point: 'Under the orb',
   page: 'Whole page',
+  focus: 'Focused field',
 };
+
+function failureOf(scope: ReadScope, reason: ReadFailure): string {
+  return scope === 'focus' && reason === 'nothing'
+    ? 'Nothing readable in the focused field.'
+    : failureText[reason];
+}
 
 const close = (): void => window.sifer.panel.close();
 const separator = ` ${String.fromCharCode(183)} `;
@@ -63,8 +70,8 @@ export function Panel() {
         {outcome?.ok && (
           <span className="panel-source">
             {scope === 'page' ? outcome.reading.control : kindText[outcome.reading.kind]}
-            {scope === 'point' && separator}
-            {scope === 'point' && outcome.reading.control}
+            {scope !== 'page' && separator}
+            {scope !== 'page' && outcome.reading.control}
           </span>
         )}
         <button type="button" className="panel-close" aria-label="Close" onClick={close}>
@@ -74,7 +81,7 @@ export function Panel() {
       {content && <ContextPreview content={content} />}
       <section className="panel-body" aria-live="polite">
         {outcome === null && <p className="panel-note">Drop the orb on any text.</p>}
-        {outcome?.ok === false && <p className="panel-note">{failureText[outcome.reason]}</p>}
+        {outcome?.ok === false && <p className="panel-note">{failureOf(scope, outcome.reason)}</p>}
         {outcome?.ok && <p className="panel-text">{outcome.reading.text}</p>}
       </section>
       {outcome?.ok && (

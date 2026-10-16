@@ -45,7 +45,9 @@ export type ReadFailure = 'nothing' | 'protected' | 'unsupported' | 'timeout' | 
 
 export type ReadOutcome = { ok: true; reading: Reading } | { ok: false; reason: ReadFailure };
 
-export type ReadScope = 'point' | 'page';
+export type ReadScope = 'point' | 'page' | 'focus';
+
+export type ImageScope = Exclude<ReadScope, 'focus'>;
 
 export interface PanelContent {
   readonly scope: ReadScope;

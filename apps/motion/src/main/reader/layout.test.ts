@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { pageReading, pageText, screenshotReading, type OcrLine } from './layout';
+import {
+  joinLines,
+  pageReading,
+  pageText,
+  screenshotReading,
+  type OcrLine,
+  type Segment,
+} from './layout';
 
 function line(y: number, ...words: [string, number][]): OcrLine {
   return {
@@ -26,6 +33,42 @@ describe('pageText', () => {
       line(30, ['column', 10], ['column', 600]),
     ];
     expect(pageText(lines)).toBe('Left\ncolumn\n\nRight\ncolumn');
+  });
+});
+
+function segment(text: string, width: number, y: number): Segment {
+  return { text, bounds: { x: 10, y, width, height: 16 } };
+}
+
+describe('joinLines', () => {
+  it('turns lines wrapped by the window back into one flowing paragraph', () => {
+    expect(
+      joinLines([
+        segment('The old lighthouse stood at the edge of the cliff, its', 400, 10),
+        segment('paint peeling after decades of salt wind and well-', 390, 30),
+        segment('known storms.', 100, 50),
+      ]),
+    ).toBe(
+      'The old lighthouse stood at the edge of the cliff, its paint peeling after decades of salt wind and well-known storms.',
+    );
+  });
+
+  it('keeps short lines, headings and code on their own lines', () => {
+    expect(joinLines([segment('Kigali', 60, 10), segment('Rwanda', 62, 30)])).toBe(
+      'Kigali\nRwanda',
+    );
+    expect(
+      joinLines([
+        segment('const total = items.reduce((sum, item) => sum + item.price, 0);', 400, 10),
+        segment('return total;', 100, 30),
+      ]),
+    ).toBe('const total = items.reduce((sum, item) => sum + item.price, 0);\nreturn total;');
+    expect(
+      joinLines([
+        segment('Short opening line here', 200, 10),
+        segment('a much longer second line that sets the width of the block', 400, 30),
+      ]),
+    ).toBe('Short opening line here\na much longer second line that sets the width of the block');
   });
 });
 

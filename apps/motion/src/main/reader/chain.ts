@@ -32,7 +32,7 @@ export interface ChainDependencies {
 
 const nothing: ReadOutcome = { ok: false, reason: 'nothing' };
 
-function settled(outcome: ReadOutcome): boolean {
+export function settled(outcome: ReadOutcome): boolean {
   if (!outcome.ok) {
     return outcome.reason === 'protected';
   }
@@ -43,6 +43,14 @@ function isNothing(outcome: ReadOutcome): boolean {
   return !outcome.ok && outcome.reason === 'nothing';
 }
 
+export function ownedByExtension(
+  window: WindowInfo | null,
+  browser: string | null,
+): window is WindowInfo {
+  const processes = browser === null ? undefined : browserProcesses[browser];
+  return window !== null && window.title !== '' && processes?.has(window.process) === true;
+}
+
 function titled(outcome: ReadOutcome, title: string): ReadOutcome {
   if (!outcome.ok || title === '') {
     return outcome;
@@ -51,11 +59,8 @@ function titled(outcome: ReadOutcome, title: string): ReadOutcome {
 }
 
 export function createReadChain(dependencies: ChainDependencies) {
-  const extensionOwns = (window: WindowInfo | null): window is WindowInfo => {
-    const browser = dependencies.extensionBrowser();
-    const processes = browser === null ? undefined : browserProcesses[browser];
-    return window !== null && window.title !== '' && processes?.has(window.process) === true;
-  };
+  const extensionOwns = (window: WindowInfo | null): window is WindowInfo =>
+    ownedByExtension(window, dependencies.extensionBrowser());
 
   const readPoint = async (
     window: WindowInfo | null,
