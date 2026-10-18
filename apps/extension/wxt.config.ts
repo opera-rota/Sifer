@@ -12,7 +12,7 @@ export default defineConfig({
     description: 'Lets Sifer Motion read the page under the orb.',
     key: publicKey,
     minimum_chrome_version: '120',
-    permissions: ['storage', 'tabs', 'alarms'],
+    permissions: ['storage', 'tabs', 'alarms', 'scripting'],
     host_permissions: ['<all_urls>'],
     action: { default_title: 'Sifer' },
   },

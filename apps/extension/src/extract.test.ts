@@ -5,6 +5,7 @@ import {
   extractPage,
   maxReadingLength,
   normalizeText,
+  probePoints,
   type Box,
   type Geometry,
 } from './extract';
@@ -149,6 +150,27 @@ describe('extractAt', () => {
     expect(extractAt(geometryFor({ hit: '#img' }), point)).toMatchObject({
       reading: { kind: 'name', text: 'Sifer logo' },
     });
+  });
+
+  it('reads text the orb covers even when its centre sits just past the words', () => {
+    render('<h1 id="h">Murakaza neza</h1>');
+    const beside = { x: 50, y: 75 };
+    const scene = geometryFor({ hit: '#h', caret: { selector: '#h' } });
+    expect(extractAt(scene, beside)).toEqual({ ok: false, reason: 'nothing' });
+    expect(extractAt(scene, beside, 20)).toMatchObject({
+      ok: true,
+      reading: { control: 'Heading', text: 'Murakaza neza' },
+    });
+    expect(extractAt(scene, beside, 5)).toEqual({ ok: false, reason: 'nothing' });
+  });
+
+  it('probes the centre first and then rings out to the reach', () => {
+    const points = probePoints({ x: 10, y: 10 }, 30);
+    expect(points[0]).toEqual({ x: 10, y: 10 });
+    expect(points).toHaveLength(25);
+    const farthest = Math.max(...points.map((probe) => Math.hypot(probe.x - 10, probe.y - 10)));
+    expect(farthest).toBeCloseTo(30);
+    expect(probePoints({ x: 10, y: 10 }, 0)).toEqual([{ x: 10, y: 10 }]);
   });
 
   it('reports nothing for empty space', () => {

@@ -34,11 +34,12 @@ import {
   type ImageScope,
   type PanelContent,
   type ReadOutcome,
+  type ReadScope,
   type SignedInState,
   type SignInResult,
 } from '../shared/bridge';
 import { readConfig } from './config';
-import { createDrag, frameInterval } from './drag';
+import { createDrag, frameInterval, type Point } from './drag';
 import { createDropReader, dropPoint } from './drop';
 import { createGoogleSignIn, GoogleSignInError } from './google';
 import { createIdentityClient, IdentityError } from './identity';
@@ -51,6 +52,7 @@ import { contextMargin, createScreenCapture, type DipRect } from './reader/captu
 import { createReadChain } from './reader/chain';
 import { createReaderClient, type CapturedImage } from './reader/client';
 import { createFocusRead } from './reader/focus';
+import type { WindowInfo } from './reader/protocol';
 import {
   bindReadShortcut,
   pointerAnchor,
@@ -285,10 +287,37 @@ if (!app.requestSingleInstanceLock()) {
   const extensionBrowser = (): string | null =>
     bridge?.connected ? (bridge.browser?.browser ?? null) : null;
 
+  const readDom = async (
+    dip: Point,
+    title: string,
+    scope: ReadScope,
+  ): Promise<ReadOutcome | null> => {
+    if (!bridge) {
+      return null;
+    }
+    const started = Date.now();
+    const outcome = await bridge.read(dip, title, scope);
+    const result = outcome === null ? 'no answer' : outcome.ok ? 'text' : outcome.reason;
+    console.log(
+      `page reader (${scope}): "${title}" at ${Math.round(dip.x)},${Math.round(dip.y)} -> ${result} in ${Date.now() - started} ms`,
+    );
+    return outcome;
+  };
+
+  const windowUnder = async (physical: Point): Promise<WindowInfo | null> => {
+    const window = reader ? await reader.app(physical) : null;
+    console.log(
+      window
+        ? `window under the orb: ${window.process} "${window.title}", extension ${extensionBrowser() ?? 'not connected'}`
+        : 'window under the orb: none',
+    );
+    return window;
+  };
+
   const readChain = createReadChain({
-    app: (physical) => (reader ? reader.app(physical) : Promise.resolve(null)),
+    app: windowUnder,
     extensionBrowser,
-    dom: (dip, title, scope) => (bridge ? bridge.read(dip, title, scope) : Promise.resolve(null)),
+    dom: readDom,
     accessibility: (physical) =>
       reader ? reader.read(physical) : Promise.resolve({ ok: false, reason: 'unsupported' }),
     page: (physical) =>
@@ -302,7 +331,7 @@ if (!app.requestSingleInstanceLock()) {
   const focusRead = createFocusRead({
     foreground: () => (reader ? reader.foreground() : Promise.resolve(null)),
     extensionBrowser,
-    dom: (dip, title, scope) => (bridge ? bridge.read(dip, title, scope) : Promise.resolve(null)),
+    dom: readDom,
     focused: () =>
       reader
         ? reader.focus()

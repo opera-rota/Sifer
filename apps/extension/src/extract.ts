@@ -4,6 +4,10 @@ import type { ReadingKind, ReadOutcome } from './protocol';
 export const maxReadingLength = 20_000;
 export const textTolerance = 4;
 export const maxPageNodes = 20_000;
+export const orbReach = 30;
+
+const probeRings = 3;
+const probeDirections = 8;
 
 export interface Box {
   readonly left: number;
@@ -222,38 +226,59 @@ function readName(hit: Element): ReadOutcome | null {
   return reading('name', controlOf(named) === 'Text' ? 'Element' : controlOf(named), raw);
 }
 
-export function extractAt(geometry: Geometry, point: ClientPoint): ReadOutcome {
-  const hit = deepElementAt(geometry, point);
-  if (!hit) {
-    return { ok: false, reason: 'nothing' };
+export function probePoints(center: ClientPoint, reach: number): readonly ClientPoint[] {
+  const points: ClientPoint[] = [center];
+  if (reach <= 0) {
+    return points;
   }
-  if (hit.closest('input[type="password" i]')) {
+  for (let ring = 1; ring <= probeRings; ring += 1) {
+    const radius = (reach * ring) / probeRings;
+    for (let step = 0; step < probeDirections; step += 1) {
+      const angle = (2 * Math.PI * step) / probeDirections;
+      points.push({
+        x: center.x + radius * Math.cos(angle),
+        y: center.y + radius * Math.sin(angle),
+      });
+    }
+  }
+  return points;
+}
+
+function textAt(geometry: Geometry, point: ClientPoint): ReadOutcome | null {
+  const caret = geometry.caretAt(point);
+  if (!caret || caret.node.nodeType !== Node.TEXT_NODE) {
+    return null;
+  }
+  const node = caret.node as Text;
+  const parent = node.parentElement;
+  if (!parent || !isOverText(geometry, node, point)) {
+    return null;
+  }
+  const cell = parent.closest<HTMLTableCellElement>('td, th');
+  const row = cell ? readTableRow(cell) : null;
+  if (row) {
+    return row;
+  }
+  const block = blockOf(geometry, parent);
+  return reading('text', controlOf(block), textOf(block));
+}
+
+export function extractAt(geometry: Geometry, point: ClientPoint, reach = 0): ReadOutcome {
+  const hit = deepElementAt(geometry, point);
+  if (hit?.closest('input[type="password" i]')) {
     return { ok: false, reason: 'protected' };
   }
-  const field = hit.closest<HTMLElement>(fieldSelector);
+  const field = hit?.closest<HTMLElement>(fieldSelector);
   if (field) {
     return readField(field) ?? { ok: false, reason: 'nothing' };
   }
-  const caret = geometry.caretAt(point);
-  if (caret && caret.node.nodeType === Node.TEXT_NODE) {
-    const node = caret.node as Text;
-    const parent = node.parentElement;
-    if (parent && isOverText(geometry, node, point)) {
-      const cell = parent.closest<HTMLTableCellElement>('td, th');
-      if (cell) {
-        const row = readTableRow(cell);
-        if (row) {
-          return row;
-        }
-      }
-      const block = blockOf(geometry, parent);
-      const found = reading('text', controlOf(block), textOf(block));
-      if (found) {
-        return found;
-      }
+  for (const probe of probePoints(point, reach)) {
+    const found = textAt(geometry, probe);
+    if (found) {
+      return found;
     }
   }
-  return readName(hit) ?? { ok: false, reason: 'nothing' };
+  return (hit ? readName(hit) : null) ?? { ok: false, reason: 'nothing' };
 }
 
 function activeElementOf(root: Document): Element | null {

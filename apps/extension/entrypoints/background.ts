@@ -1,6 +1,7 @@
 import { browser, type Browser } from 'wxt/browser';
 import { defineBackground } from 'wxt/utils/define-background';
 import { createConnection } from '../src/connection';
+import { deliver } from '../src/deliver';
 import {
   bridgeProbeUrl,
   isPopupRequest,
@@ -15,6 +16,7 @@ import { windowAt, type WindowBox } from '../src/target';
 
 const tokenKey = 'bridgeToken';
 const alarmName = 'sifer-bridge';
+const contentScript = '/content-scripts/content.js';
 
 function identity(): { browser: string; version: string } {
   const agent = navigator.userAgent;
@@ -56,14 +58,22 @@ async function readPage(point: ScreenPoint, title: string, scope: ReadScope): Pr
   if (!target) {
     return { ok: false, reason: 'nothing' };
   }
+  const tabId = target.tabId;
+  let zoom: number;
   try {
-    const zoom = await browser.tabs.getZoom(target.tabId);
-    const request: PageReadRequest = { type: 'sifer.read', x: point.x, y: point.y, zoom, scope };
-    const outcome: unknown = await browser.tabs.sendMessage(target.tabId, request, { frameId: 0 });
-    return (outcome as ReadOutcome | undefined) ?? { ok: false, reason: 'nothing' };
+    zoom = await browser.tabs.getZoom(tabId);
   } catch {
     return { ok: false, reason: 'unsupported' };
   }
+  const request: PageReadRequest = { type: 'sifer.read', x: point.x, y: point.y, zoom, scope };
+  return deliver({
+    send: () => browser.tabs.sendMessage(tabId, request, { frameId: 0 }),
+    inject: () =>
+      browser.scripting.executeScript({
+        target: { tabId, frameIds: [0] },
+        files: [contentScript],
+      }),
+  });
 }
 
 async function reachable(): Promise<boolean> {

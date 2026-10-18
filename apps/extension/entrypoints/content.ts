@@ -1,6 +1,6 @@
 import { browser } from 'wxt/browser';
 import { defineContentScript } from 'wxt/utils/define-content-script';
-import { documentGeometry, extractAt, extractFocus, extractPage } from '../src/extract';
+import { documentGeometry, extractAt, extractFocus, extractPage, orbReach } from '../src/extract';
 import { toClientPoint, type PointerSample } from '../src/locate';
 import { isPageReadRequest, type ReadOutcome } from '../src/protocol';
 
@@ -56,7 +56,7 @@ export default defineContentScript({
           : message.scope === 'focus'
             ? extractFocus(geometry, document)
             : point
-              ? extractAt(geometry, point)
+              ? extractAt(geometry, point, orbReach / message.zoom)
               : { ok: false, reason: 'nothing' };
       sendResponse(outcome);
       return false;

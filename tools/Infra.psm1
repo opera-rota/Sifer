@@ -84,9 +84,16 @@ function Get-PortListener {
     }
 }
 
+function Get-BlockedProgram {
+    $rules = @(Get-NetFirewallRule -Group 'Sifer' -ErrorAction SilentlyContinue |
+        Where-Object { "$($_.Enabled)" -eq 'True' -and "$($_.Direction)" -eq 'Inbound' -and "$($_.Action)" -eq 'Block' })
+    @($rules | Get-NetFirewallApplicationFilter | ForEach-Object Program)
+}
+
 function Get-SiferStatus {
     param([string[]]$Name)
     $selected = if ($Name) { @($Name | ForEach-Object { Get-ServiceDefinition -Name $_ }) } else { $script:Services }
+    $blocked = @(Get-BlockedProgram)
     foreach ($service in $selected) {
         $listeners = @($service.Ports | ForEach-Object { Get-PortListener -Port $_ })
 
@@ -110,7 +117,7 @@ function Get-SiferStatus {
             $tcp = $tcpAddresses -join ', '
             $udp = if ($udpEndpoints.Count -gt 0) { '{0} ({1})' -f ($udpAddresses -join ', '), $udpEndpoints.Count } else { '-' }
             $wide = @(@($tcpAddresses) + @($udpAddresses) | Where-Object { $_ -notin $script:Loopback })
-            $exposed = if ($wide.Count -gt 0) { 'yes' } else { 'no' }
+            $exposed = if ($wide.Count -eq 0) { 'no' } elseif ($blocked -contains $service.Exe) { 'blocked' } else { 'yes' }
         }
 
         [pscustomobject]@{
