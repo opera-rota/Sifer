@@ -55,6 +55,9 @@ motion:
 extension:
     pnpm --filter @sifer/extension build
 
+icons:
+    node tools/icons.mjs
+
 motion-package:
     pnpm --filter @sifer/motion package
 
