@@ -18,7 +18,7 @@ export function panelWindowOptions(preload: string): BrowserWindowConstructorOpt
     alwaysOnTop: true,
     show: false,
     title: 'Sifer',
-    backgroundColor: '#12142a',
+    backgroundColor: '#061c20',
     webPreferences: hardenedWebPreferences(preload),
   };
 }

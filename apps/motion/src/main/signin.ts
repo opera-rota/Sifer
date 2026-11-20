@@ -15,7 +15,7 @@ export function signInWindowOptions(preload: string): BrowserWindowConstructorOp
     center: true,
     title: 'Sign in to Sifer',
     autoHideMenuBar: true,
-    backgroundColor: '#12142a',
+    backgroundColor: '#061c20',
     webPreferences: hardenedWebPreferences(preload),
   };
 }

@@ -17,8 +17,8 @@ export interface Receiver {
 const page = (title: string, detail: string): string =>
   `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Sifer</title>` +
   `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'">` +
-  `<style>body{margin:0;display:grid;place-items:center;height:100vh;background:#12142a;color:#e9ecff;` +
-  `font:15px 'Segoe UI',system-ui,sans-serif}main{text-align:center}p{color:#aab0d8}</style></head>` +
+  `<style>body{margin:0;display:grid;place-items:center;height:100vh;background:#061c20;color:#e6fbfa;` +
+  `font:15px 'Segoe UI',system-ui,sans-serif}main{text-align:center}p{color:#9cc9c8}</style></head>` +
   `<body><main><h1>${title}</h1><p>${detail}</p></main></body></html>`;
 
 function respond(response: ServerResponse, status: number, body: string): void {
