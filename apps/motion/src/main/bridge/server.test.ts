@@ -11,6 +11,7 @@ interface Harness {
   approve: ReturnType<typeof vi.fn>;
   issue: ReturnType<typeof vi.fn>;
   status: boolean[];
+  notes: string[];
   clock: { now: number };
 }
 
@@ -28,6 +29,7 @@ afterEach(async () => {
 
 async function start(approved = true): Promise<Harness> {
   const status: boolean[] = [];
+  const notes: string[] = [];
   const clock = { now: 1_000_000 };
   const approve = vi.fn(async () => approved);
   const issue = vi.fn(() => goodToken);
@@ -38,10 +40,11 @@ async function start(approved = true): Promise<Harness> {
     tokens: { matches: (token) => token === goodToken, issue },
     approvePairing: approve,
     onStatus: (connected) => status.push(connected),
+    onNote: (note) => notes.push(note),
   });
   await bridge.start();
   open.push(bridge);
-  return { bridge, approve, issue, status, clock };
+  return { bridge, approve, issue, status, notes, clock };
 }
 
 function connect(
@@ -142,7 +145,7 @@ describe('createBridge', () => {
   });
 
   it('reads through a connected extension', async () => {
-    const { bridge, status } = await start();
+    const { bridge, status, notes } = await start();
     const socket = connect(bridge, session);
     await opened(socket);
     await vi.waitFor(() => expect(bridge.connected).toBe(true));
@@ -168,10 +171,12 @@ describe('createBridge', () => {
           ok: true,
           reading: { source: 'dom', kind: 'value', control: 'Field', text: 'Kigali' },
         },
+        note: 'tab "Kigali weather" zoom 1: content script answered -> text',
       }),
     );
     await expect(read).resolves.toMatchObject({ reading: { source: 'dom', text: 'Kigali' } });
     expect(status).toEqual([true, true]);
+    expect(notes).toEqual(['tab "Kigali weather" zoom 1: content script answered -> text']);
   });
 
   it('gives up on a slow extension so the next reader can run', async () => {

@@ -26,7 +26,17 @@ export type MotionMessage =
 export type ExtensionMessage =
   | { type: 'hello'; browser: string; version: string }
   | { type: 'keepalive' }
-  | { type: 'reading'; id: number; outcome: ReadOutcome };
+  | { type: 'reading'; id: number; outcome: ReadOutcome; note: string };
+
+export interface PageAnswer {
+  readonly outcome: ReadOutcome;
+  readonly note: string;
+}
+
+export interface ContentAnswer {
+  readonly outcome: ReadOutcome;
+  readonly detail: string;
+}
 
 export interface PageReadRequest {
   readonly type: 'sifer.read';
@@ -48,6 +58,7 @@ export const tokenProtocolPrefix = 'sifer.token.';
 
 const tokenPattern = /^[A-Za-z0-9_-]{43}$/;
 export const maxTitleLength = 512;
+export const maxNoteLength = 480;
 
 function isScope(value: unknown): value is ReadScope {
   return value === 'point' || value === 'page' || value === 'focus';

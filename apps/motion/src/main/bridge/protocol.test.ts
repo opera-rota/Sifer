@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   extensionOrigin,
+  maxNoteLength,
   isAllowedHost,
   parseExtensionMessage,
   parseProtocols,
@@ -59,7 +60,19 @@ describe('parseExtensionMessage', () => {
     expect(parseExtensionMessage('{"type":"keepalive"}')).toEqual({ type: 'keepalive' });
     expect(
       parseExtensionMessage('{"type":"reading","id":4,"outcome":{"ok":false,"reason":"nothing"}}'),
-    ).toEqual({ type: 'reading', id: 4, outcome: { ok: false, reason: 'nothing' } });
+    ).toEqual({ type: 'reading', id: 4, outcome: { ok: false, reason: 'nothing' }, note: null });
+  });
+
+  it('keeps a short extension note and drops an empty or oversized one', () => {
+    const reading = (note: string): string =>
+      JSON.stringify({ type: 'reading', id: 2, outcome: { ok: false, reason: 'nothing' }, note });
+    expect(parseExtensionMessage(reading('no window matched 656,314'))).toMatchObject({
+      note: 'no window matched 656,314',
+    });
+    expect(parseExtensionMessage(reading(''))).toMatchObject({ note: null });
+    expect(parseExtensionMessage(reading('x'.repeat(maxNoteLength + 1)))).toMatchObject({
+      note: null,
+    });
   });
 
   it('drops malformed and unknown messages', () => {

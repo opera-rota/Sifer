@@ -7,7 +7,7 @@ import {
   type SocketHandlers,
   type SocketLike,
 } from './connection';
-import type { ReadOutcome, Status } from './protocol';
+import type { PageAnswer, Status } from './protocol';
 
 const token = 'K'.repeat(43);
 
@@ -48,9 +48,12 @@ function harness(options: { stored?: string | null; reachable?: boolean } = {}) 
   let stored = options.stored === undefined ? token : options.stored;
   const sockets: FakeSocket[] = [];
   const statuses: Status[] = [];
-  const read = vi.fn(async (): Promise<ReadOutcome> => ({
-    ok: true,
-    reading: { source: 'dom', kind: 'text', control: 'Paragraph', text: 'hello' },
+  const read = vi.fn(async (): Promise<PageAnswer> => ({
+    outcome: {
+      ok: true,
+      reading: { source: 'dom', kind: 'text', control: 'Paragraph', text: 'hello' },
+    },
+    note: 'tab "Inbox" zoom 1: content script answered -> text',
   }));
   const connection = createConnection({
     open: (_url, protocols, handlers) => {
@@ -120,7 +123,12 @@ describe('createConnection', () => {
     });
     await vi.waitFor(() => expect(socket.sent).toHaveLength(2));
     expect(read).toHaveBeenCalledWith({ x: 120, y: 340 }, 'Inbox - Google Chrome', 'page');
-    expect(socket.sent[1]).toMatchObject({ type: 'reading', id: 7, outcome: { ok: true } });
+    expect(socket.sent[1]).toMatchObject({
+      type: 'reading',
+      id: 7,
+      outcome: { ok: true },
+      note: 'tab "Inbox" zoom 1: content script answered -> text',
+    });
   });
 
   it('reports a failed read instead of staying silent', async () => {
@@ -135,6 +143,7 @@ describe('createConnection', () => {
         type: 'reading',
         id: 1,
         outcome: { ok: false, reason: 'failed' },
+        note: 'read failed: tab closed',
       }),
     );
   });

@@ -632,6 +632,7 @@ if (!app.requestSingleInstanceLock()) {
         console.log(`browser extension ${connected ? 'connected' : 'disconnected'}`);
         refreshTray();
       },
+      onNote: (note) => console.log(`page reader note: ${note}`),
     });
     bridge.start().then(
       () => console.log(`bridge listening on 127.0.0.1:${bridge?.port}`),

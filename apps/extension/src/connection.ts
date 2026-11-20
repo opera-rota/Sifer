@@ -5,7 +5,7 @@ import {
   parseMotionMessage,
   tokenProtocolPrefix,
   type ExtensionMessage,
-  type ReadOutcome,
+  type PageAnswer,
   type ReadScope,
   type ScreenPoint,
   type Status,
@@ -37,7 +37,7 @@ export interface ConnectionDependencies {
   open(url: string, protocols: string[], handlers: SocketHandlers): SocketLike;
   storage: TokenStorage;
   reachable(): Promise<boolean>;
-  read(point: ScreenPoint, title: string, scope: ReadScope): Promise<ReadOutcome>;
+  read(point: ScreenPoint, title: string, scope: ReadScope): Promise<PageAnswer>;
   identity: { browser: string; version: string };
   setTimer(callback: () => void, milliseconds: number): unknown;
   clearTimer(handle: unknown): void;
@@ -100,13 +100,16 @@ export function createConnection(dependencies: ConnectionDependencies) {
     title: string,
     scope: ReadScope,
   ): Promise<void> => {
-    let outcome: ReadOutcome;
+    let answer: PageAnswer;
     try {
-      outcome = await dependencies.read(point, title, scope);
-    } catch {
-      outcome = { ok: false, reason: 'failed' };
+      answer = await dependencies.read(point, title, scope);
+    } catch (error) {
+      answer = {
+        outcome: { ok: false, reason: 'failed' },
+        note: `read failed: ${error instanceof Error ? error.message : String(error)}`,
+      };
     }
-    send(target, { type: 'reading', id, outcome });
+    send(target, { type: 'reading', id, outcome: answer.outcome, note: answer.note });
   };
 
   async function connect(): Promise<void> {

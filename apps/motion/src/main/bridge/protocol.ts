@@ -14,7 +14,7 @@ export type BridgeAccess = { kind: 'pair' } | { kind: 'session'; token: string }
 export type ExtensionMessage =
   | { type: 'hello'; browser: string; version: string }
   | { type: 'keepalive' }
-  | { type: 'reading'; id: number; outcome: ReadOutcome };
+  | { type: 'reading'; id: number; outcome: ReadOutcome; note: string | null };
 
 export type MotionMessage =
   | { type: 'paired'; token: string }
@@ -22,6 +22,7 @@ export type MotionMessage =
   | { type: 'read'; id: number; x: number; y: number; title: string; scope: ReadScope };
 
 const tokenPattern = /^[A-Za-z0-9_-]{43}$/;
+export const maxNoteLength = 480;
 
 export function parseProtocols(header: string | undefined): BridgeAccess | null {
   const offered = (header ?? '')
@@ -55,6 +56,10 @@ function shortText(value: unknown): value is string {
   return typeof value === 'string' && value.length <= 64;
 }
 
+function noteOf(value: unknown): string | null {
+  return typeof value === 'string' && value !== '' && value.length <= maxNoteLength ? value : null;
+}
+
 export function parseExtensionMessage(raw: string): ExtensionMessage | null {
   let value: unknown;
   try {
@@ -74,7 +79,12 @@ export function parseExtensionMessage(raw: string): ExtensionMessage | null {
       return { type: 'keepalive' };
     case 'reading':
       return Number.isSafeInteger(value['id']) && isReadOutcome(value['outcome'])
-        ? { type: 'reading', id: value['id'] as number, outcome: value['outcome'] }
+        ? {
+            type: 'reading',
+            id: value['id'] as number,
+            outcome: value['outcome'],
+            note: noteOf(value['note']),
+          }
         : null;
     default:
       return null;

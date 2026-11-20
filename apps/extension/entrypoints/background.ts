@@ -2,12 +2,13 @@ import { browser, type Browser } from 'wxt/browser';
 import { defineBackground } from 'wxt/utils/define-background';
 import { createConnection } from '../src/connection';
 import { deliver } from '../src/deliver';
+import { deliveredNote, unmatchedNote, zoomNote } from '../src/note';
 import {
   bridgeProbeUrl,
   isPopupRequest,
   isToken,
+  type PageAnswer,
   type PageReadRequest,
-  type ReadOutcome,
   type ReadScope,
   type ScreenPoint,
   type Status,
@@ -45,28 +46,25 @@ function boxOf(window: Browser.windows.Window): WindowBox | null {
   };
 }
 
-async function readPage(point: ScreenPoint, title: string, scope: ReadScope): Promise<ReadOutcome> {
+async function readPage(point: ScreenPoint, title: string, scope: ReadScope): Promise<PageAnswer> {
   const windows = await browser.windows.getAll({
     populate: true,
     windowTypes: ['normal', 'popup', 'app'],
   });
-  const target = windowAt(
-    windows.map(boxOf).filter((box): box is WindowBox => box !== null),
-    point,
-    title,
-  );
+  const boxes = windows.map(boxOf).filter((box): box is WindowBox => box !== null);
+  const target = windowAt(boxes, point, title);
   if (!target) {
-    return { ok: false, reason: 'nothing' };
+    return { outcome: { ok: false, reason: 'nothing' }, note: unmatchedNote(boxes, point, title) };
   }
   const tabId = target.tabId;
   let zoom: number;
   try {
     zoom = await browser.tabs.getZoom(tabId);
   } catch {
-    return { ok: false, reason: 'unsupported' };
+    return { outcome: { ok: false, reason: 'unsupported' }, note: zoomNote(target) };
   }
   const request: PageReadRequest = { type: 'sifer.read', x: point.x, y: point.y, zoom, scope };
-  return deliver({
+  const delivered = await deliver({
     send: () => browser.tabs.sendMessage(tabId, request, { frameId: 0 }),
     inject: () =>
       browser.scripting.executeScript({
@@ -74,6 +72,7 @@ async function readPage(point: ScreenPoint, title: string, scope: ReadScope): Pr
         files: [contentScript],
       }),
   });
+  return { outcome: delivered.outcome, note: deliveredNote(target, zoom, delivered) };
 }
 
 async function reachable(): Promise<boolean> {

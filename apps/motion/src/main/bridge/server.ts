@@ -31,6 +31,7 @@ export interface BridgeDependencies {
   tokens: BridgeTokens;
   approvePairing(): Promise<boolean>;
   onStatus(connected: boolean): void;
+  onNote?(note: string): void;
   port?: number;
   origin?: string;
   readTimeout?: number;
@@ -143,7 +144,11 @@ export function createBridge(dependencies: BridgeDependencies) {
         browser = { browser: message.browser, version: message.version };
         dependencies.onStatus(true);
       } else if (message.type === 'reading') {
-        pending.get(message.id)?.(message.outcome);
+        const settle = pending.get(message.id);
+        if (settle && message.note) {
+          dependencies.onNote?.(message.note);
+        }
+        settle?.(message.outcome);
       }
     });
     socket.on('close', () => endSession(socket));
