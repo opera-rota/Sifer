@@ -84,4 +84,23 @@ describe('readings', () => {
     });
     expect(pageReading([])).toEqual({ ok: false, reason: 'nothing' });
   });
+
+  it('reads the nearest line the orb covers when its centre falls between lines', () => {
+    const lines = [
+      line(10, ['const', 10], ['shownWindows', 60]),
+      line(80, ['function', 10], ['limited(note:', 90]),
+    ];
+    expect(screenshotReading(lines, { x: 40, y: 62 })).toEqual({ ok: false, reason: 'nothing' });
+    expect(screenshotReading(lines, { x: 40, y: 62 }, 45)).toMatchObject({
+      reading: { control: 'Screen', text: 'function limited(note:' },
+    });
+  });
+
+  it('still reads nothing when no line is under the orb', () => {
+    const lines = [line(10, ['far', 10])];
+    expect(screenshotReading(lines, { x: 400, y: 300 }, 45)).toEqual({
+      ok: false,
+      reason: 'nothing',
+    });
+  });
 });

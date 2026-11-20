@@ -102,12 +102,12 @@ function distance(rect: ScreenRect, point: Point): number {
   return Math.hypot(dx, dy);
 }
 
-export function segmentAt(all: readonly Segment[], point: Point): Segment | null {
+export function segmentAt(all: readonly Segment[], point: Point, reach = 0): Segment | null {
   let best: Segment | null = null;
   let bestDistance = Number.POSITIVE_INFINITY;
   for (const segment of all) {
     const away = distance(segment.bounds, point);
-    if (away <= segment.bounds.height / 2 && away < bestDistance) {
+    if (away <= Math.max(segment.bounds.height / 2, reach) && away < bestDistance) {
       best = segment;
       bestDistance = away;
     }
@@ -156,9 +156,9 @@ function neighbour(
   return best;
 }
 
-export function paragraphAt(lines: readonly OcrLine[], point: Point): string {
+export function paragraphAt(lines: readonly OcrLine[], point: Point, reach = 0): string {
   const all = segments(lines);
-  const hit = segmentAt(all, point);
+  const hit = segmentAt(all, point, reach);
   if (!hit) {
     return '';
   }
@@ -242,8 +242,8 @@ function reading(text: string, control: string): ReadOutcome {
   };
 }
 
-export function screenshotReading(lines: readonly OcrLine[], point: Point): ReadOutcome {
-  return reading(paragraphAt(lines, point), 'Screen');
+export function screenshotReading(lines: readonly OcrLine[], point: Point, reach = 0): ReadOutcome {
+  return reading(paragraphAt(lines, point, reach), 'Screen');
 }
 
 export function pageReading(lines: readonly OcrLine[]): ReadOutcome {

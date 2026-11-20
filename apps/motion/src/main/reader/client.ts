@@ -39,6 +39,7 @@ export interface CapturedImage {
   readonly height: number;
   readonly pixels: Uint8Array;
   readonly point: Point;
+  readonly reach: number;
 }
 
 type Settle = (reply: ReaderReply | null, reason: 'timeout' | 'failed') => void;
@@ -145,6 +146,7 @@ export function createReaderClient(dependencies: ReaderClientDependencies) {
         scope,
         x: Math.round(image.point.x),
         y: Math.round(image.point.y),
+        reach: Math.max(Math.round(image.reach), 0),
         width: image.width,
         height: image.height,
         pixels: image.pixels,

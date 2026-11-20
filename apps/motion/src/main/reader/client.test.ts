@@ -119,7 +119,13 @@ describe('createReaderClient', () => {
   });
 
   it('sends images with their scope and gives a whole window more time', async () => {
-    const image = { width: 1, height: 1, pixels: new Uint8Array(4), point: { x: 0, y: 0 } };
+    const image = {
+      width: 1,
+      height: 1,
+      pixels: new Uint8Array(4),
+      point: { x: 0, y: 0 },
+      reach: 0,
+    };
     const page = client.recognize(image, 'page');
     expect(worker().sent[0]).toMatchObject({ op: 'ocr', scope: 'page', width: 1, height: 1 });
     vi.advanceTimersByTime(ocrTimeout);

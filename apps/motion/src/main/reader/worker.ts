@@ -96,7 +96,9 @@ function recognize(request: OcrRequest): ReadOutcome {
   try {
     const lines = engine.recognize(request, page ? pageRecognizeDeadline : recognizeDeadline);
     console.log(`text recognition found ${lines.length} lines (${request.scope})`);
-    return page ? pageReading(lines) : screenshotReading(lines, { x: request.x, y: request.y });
+    return page
+      ? pageReading(lines)
+      : screenshotReading(lines, { x: request.x, y: request.y }, request.reach);
   } catch (error) {
     if (error instanceof OcrUnavailable) {
       return { ok: false, reason: 'unsupported' };

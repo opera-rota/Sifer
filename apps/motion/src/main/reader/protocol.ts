@@ -25,6 +25,7 @@ export interface OcrRequest {
   readonly scope: ImageScope;
   readonly x: number;
   readonly y: number;
+  readonly reach: number;
   readonly width: number;
   readonly height: number;
   readonly pixels: Uint8Array;
@@ -91,8 +92,11 @@ function isImage(value: Record<string, unknown>): boolean {
   const width = value['width'];
   const height = value['height'];
   const pixels = value['pixels'];
+  const reach = value['reach'];
   return (
     scopes.has(value['scope']) &&
+    Number.isInteger(reach) &&
+    (reach as number) >= 0 &&
     Number.isInteger(width) &&
     Number.isInteger(height) &&
     (width as number) > 0 &&

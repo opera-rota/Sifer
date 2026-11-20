@@ -48,7 +48,7 @@ import { createBridge, type Bridge } from './bridge/server';
 import { createTokenStore } from './bridge/token';
 import { createSessionManager, type SessionManager } from './session';
 import { panelPlacement, panelSize, panelWindowOptions } from './panel';
-import { contextMargin, createScreenCapture, type DipRect } from './reader/capture';
+import { createScreenCapture, type DipRect } from './reader/capture';
 import { createReadChain } from './reader/chain';
 import { createReaderClient, type CapturedImage } from './reader/client';
 import { createFocusRead } from './reader/focus';
@@ -322,8 +322,7 @@ if (!app.requestSingleInstanceLock()) {
       reader ? reader.read(physical) : Promise.resolve({ ok: false, reason: 'unsupported' }),
     page: (physical) =>
       reader ? reader.page(physical) : Promise.resolve({ ok: false, reason: 'unsupported' }),
-    screenshot: (dip) =>
-      recognizeCapture('point', () => capture.around(dip, orbSize / 2 + contextMargin)),
+    screenshot: (dip) => recognizeCapture('point', () => capture.around(dip, orbSize / 2)),
     windowShot: (dip, frame) =>
       recognizeCapture('page', () => capture.window(dip, windowFrameInDip(frame))),
   });

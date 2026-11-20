@@ -10,12 +10,23 @@ describe('isReadRequest', () => {
     expect(isReadRequest({ id: 5, op: 'foreground', x: 0, y: 0 })).toBe(true);
   });
 
-  it('accepts an image only with a scope and matching pixels', () => {
-    const image = { id: 4, op: 'ocr', x: 0, y: 0, width: 2, height: 1, pixels: new Uint8Array(8) };
+  it('accepts an image only with a scope, a reach and matching pixels', () => {
+    const image = {
+      id: 4,
+      op: 'ocr',
+      x: 0,
+      y: 0,
+      reach: 45,
+      width: 2,
+      height: 1,
+      pixels: new Uint8Array(8),
+    };
     expect(isReadRequest({ ...image, scope: 'point' })).toBe(true);
     expect(isReadRequest({ ...image, scope: 'page' })).toBe(true);
     expect(isReadRequest(image)).toBe(false);
     expect(isReadRequest({ ...image, scope: 'page', pixels: new Uint8Array(4) })).toBe(false);
+    expect(isReadRequest({ ...image, scope: 'point', reach: -1 })).toBe(false);
+    expect(isReadRequest({ ...image, scope: 'point', reach: undefined })).toBe(false);
   });
 
   it('rejects anything else', () => {

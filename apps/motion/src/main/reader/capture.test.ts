@@ -9,13 +9,14 @@ const display: DisplayGeometry = {
 const image = { width: 1920, height: 1080 };
 
 describe('captureRegion', () => {
-  it('takes a full width band around the point in physical pixels', () => {
-    expect(captureRegion({ x: 768, y: 432 }, display, 100, image)).toEqual({
+  it('takes a full width band around the orb and the context margin in physical pixels', () => {
+    expect(captureRegion({ x: 768, y: 432 }, display, 36, image)).toEqual({
       x: 0,
-      y: 415,
+      y: 345,
       width: 1920,
-      height: 250,
-      point: { x: 960, y: 125 },
+      height: 390,
+      point: { x: 960, y: 195 },
+      reach: 45,
     });
   });
 
@@ -32,6 +33,7 @@ describe('windowRegion', () => {
       width: 500,
       height: 300,
       point: { x: 0, y: 0 },
+      reach: 0,
     });
   });
 
@@ -42,6 +44,7 @@ describe('windowRegion', () => {
       width: 1920,
       height: 1030,
       point: { x: 0, y: 0 },
+      reach: 0,
     });
   });
 

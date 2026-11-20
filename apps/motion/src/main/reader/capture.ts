@@ -15,6 +15,7 @@ export interface CaptureRegion {
   readonly width: number;
   readonly height: number;
   readonly point: Point;
+  readonly reach: number;
 }
 
 export interface ScreenImage {
@@ -66,13 +67,20 @@ export function windowRegion(
   if (right <= left || bottom <= top) {
     return null;
   }
-  return { x: left, y: top, width: right - left, height: bottom - top, point: { x: 0, y: 0 } };
+  return {
+    x: left,
+    y: top,
+    width: right - left,
+    height: bottom - top,
+    point: { x: 0, y: 0 },
+    reach: 0,
+  };
 }
 
 export function captureRegion(
   dip: Point,
   display: DisplayGeometry,
-  reach: number,
+  cover: number,
   image: { width: number; height: number },
 ): CaptureRegion | null {
   const scaleX = image.width / display.bounds.width;
@@ -84,7 +92,7 @@ export function captureRegion(
   if (centre.x < 0 || centre.y < 0 || centre.x >= image.width || centre.y >= image.height) {
     return null;
   }
-  const half = Math.round(reach * scaleY);
+  const half = Math.round((cover + contextMargin) * scaleY);
   const top = Math.max(centre.y - half, 0);
   const bottom = Math.min(centre.y + half, image.height);
   return {
@@ -93,6 +101,7 @@ export function captureRegion(
     width: image.width,
     height: bottom - top,
     point: { x: centre.x, y: centre.y - top },
+    reach: Math.round(cover * scaleY),
   };
 }
 
@@ -132,12 +141,13 @@ export function createScreenCapture(dependencies: CaptureDependencies) {
       height: size.height,
       pixels: new Uint8Array(bitmap.buffer, bitmap.byteOffset, bitmap.length),
       point: region.point,
+      reach: region.reach,
     };
   };
 
   return {
-    around: (dip: Point, reach: number): Promise<CapturedImage | null> =>
-      grab(dip, (display, image) => captureRegion(dip, display, reach, image)),
+    around: (dip: Point, cover: number): Promise<CapturedImage | null> =>
+      grab(dip, (display, image) => captureRegion(dip, display, cover, image)),
     window: (dip: Point, frame: DipRect): Promise<CapturedImage | null> =>
       grab(dip, (display, image) => windowRegion(frame, display, image)),
   };
