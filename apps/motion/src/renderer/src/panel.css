@@ -355,3 +355,118 @@ body {
     animation: none;
   }
 }
+
+.panel-apply {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  border: 1px solid rgba(125, 255, 240, 0.85);
+  background: linear-gradient(115deg, #18c79a 0%, #1de9b6 50%, #0a6b62 100%);
+  box-shadow:
+    0 0 10px rgba(29, 233, 182, 0.55),
+    inset 0 1px 0 rgba(220, 255, 248, 0.6);
+  color: #021d1c;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.panel-apply .glyph {
+  width: 14px;
+  height: 14px;
+}
+
+.panel-apply:hover:not(:disabled) {
+  box-shadow:
+    0 0 16px rgba(29, 233, 182, 0.85),
+    inset 0 1px 0 rgba(220, 255, 248, 0.7);
+}
+
+.panel-apply.working {
+  border-color: rgba(46, 242, 216, 0.5);
+  background: rgba(46, 242, 216, 0.1);
+  box-shadow: none;
+  color: var(--teal-soft);
+}
+
+.panel-apply.working .glyph {
+  animation: breathe 1.1s ease-in-out infinite;
+}
+
+.panel-action:disabled {
+  opacity: 0.55;
+  box-shadow: none;
+}
+
+.panel-undo {
+  font-variant-numeric: tabular-nums;
+  border-color: rgba(125, 255, 240, 0.8);
+  color: var(--teal-soft);
+}
+
+.panel-label.caution {
+  color: var(--amber);
+}
+
+.panel-label-mark.caution {
+  color: var(--amber);
+  filter: drop-shadow(0 0 5px rgba(240, 200, 112, 0.75));
+}
+
+.panel-timer {
+  height: 2px;
+  margin: -2px 0 10px;
+  border-radius: 2px;
+  background: rgba(46, 242, 216, 0.12);
+  overflow: hidden;
+}
+
+.panel-timer span {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--jade), var(--teal-soft));
+  box-shadow: 0 0 8px rgba(46, 242, 216, 0.9);
+  transition: width 250ms linear;
+}
+
+.panel-caution {
+  margin: 0 0 8px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(240, 200, 112, 0.45);
+  background: rgba(240, 200, 112, 0.07);
+  color: var(--amber);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.panel-write-note {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+}
+
+.panel-write-note.info {
+  color: var(--mist);
+}
+
+.panel-write-note.error {
+  color: var(--rose);
+}
+
+.panel-apply:focus-visible,
+.panel-undo:focus-visible {
+  outline: 2px solid var(--teal-soft);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel-apply.working .glyph,
+  .panel-timer span {
+    animation: none;
+    transition: none;
+  }
+}

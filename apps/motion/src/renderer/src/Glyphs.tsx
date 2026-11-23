@@ -128,3 +128,33 @@ export const Close = ({ className }: GlyphProps) => (
     <path d="m6 6 12 12M18 6 6 18" />
   </Glyph>
 );
+
+export const WriteIn = ({ className }: GlyphProps) => (
+  <Glyph className={className}>
+    <path d="M4 20h7" />
+    <path d="m14.5 5.5 4 4L10 18H6v-4z" />
+    <path d="m12.5 7.5 4 4" />
+  </Glyph>
+);
+
+export const Check = ({ className }: GlyphProps) => (
+  <Glyph className={className}>
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="m8.3 12.2 2.5 2.5 4.9-5" />
+  </Glyph>
+);
+
+export const Caution = ({ className }: GlyphProps) => (
+  <Glyph className={className}>
+    <path d="M12 3.5 2.8 19.5h18.4z" />
+    <path d="M12 10v4" />
+    <path d="M12 16.8v.2" />
+  </Glyph>
+);
+
+export const UndoArrow = ({ className }: GlyphProps) => (
+  <Glyph className={className}>
+    <path d="M9 7 4.5 11.5 9 16" />
+    <path d="M4.5 11.5H15a4.5 4.5 0 0 1 0 9h-2" />
+  </Glyph>
+);

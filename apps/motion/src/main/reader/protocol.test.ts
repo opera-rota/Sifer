@@ -29,6 +29,17 @@ describe('isReadRequest', () => {
     expect(isReadRequest({ ...image, scope: 'point', reach: undefined })).toBe(false);
   });
 
+  it('accepts writing requests only with their own fields', () => {
+    expect(isReadRequest({ id: 6, op: 'select', x: 10, y: 20, text: 'Hello' })).toBe(true);
+    expect(isReadRequest({ id: 6, op: 'select', x: 10, y: 20, text: '' })).toBe(false);
+    expect(isReadRequest({ id: 6, op: 'select', x: 10, y: 20 })).toBe(false);
+    expect(isReadRequest({ id: 6, op: 'select', text: 'Hello' })).toBe(false);
+    expect(isReadRequest({ id: 7, op: 'front' })).toBe(true);
+    expect(isReadRequest({ id: 8, op: 'keys', chord: 'paste' })).toBe(true);
+    expect(isReadRequest({ id: 8, op: 'keys', chord: 'undo' })).toBe(true);
+    expect(isReadRequest({ id: 8, op: 'keys', chord: 'delete' })).toBe(false);
+  });
+
   it('rejects anything else', () => {
     expect(isReadRequest({ id: 0, op: 'read', x: 1, y: 1 })).toBe(false);
     expect(isReadRequest({ id: 1, op: 'read', x: 1.5, y: 1 })).toBe(false);
@@ -127,6 +138,15 @@ describe('isReaderReply', () => {
         },
       }),
     ).toBe(false);
+  });
+
+  it('accepts selection and target results', () => {
+    expect(isReaderReply({ id: 1, select: 'selected' })).toBe(true);
+    expect(isReaderReply({ id: 1, select: 'moved' })).toBe(true);
+    expect(isReaderReply({ id: 1, select: 'typed' })).toBe(false);
+    expect(isReaderReply({ id: 2, target: 'ready' })).toBe(true);
+    expect(isReaderReply({ id: 2, target: 'blocked' })).toBe(true);
+    expect(isReaderReply({ id: 2, target: 'gone' })).toBe(false);
   });
 
   it('rejects malformed replies', () => {

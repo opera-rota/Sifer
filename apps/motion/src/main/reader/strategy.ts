@@ -1,5 +1,6 @@
 import type { ReadingKind, ReadOutcome } from '../../shared/bridge';
 import type { Point } from '../drag';
+import type { SelectResult } from './protocol';
 
 export const maxReadingLength = 20_000;
 export const maxAncestors = 10;
@@ -297,5 +298,75 @@ export function focusAt(automation: FocusAutomation): FocusedReading {
     return { outcome: outcome ?? { ok: false, reason: 'nothing' }, bounds: box };
   } finally {
     target.release();
+  }
+}
+
+export interface TextSpan {
+  readonly bounds: readonly ScreenRect[];
+  text(): string;
+  shrinkEnd(characters: number): void;
+  select(): void;
+  release(): void;
+}
+
+export interface WritableNode extends AutomationNode {
+  spanAt(point: Point): TextSpan | null;
+  spanOf(child: WritableNode): TextSpan | null;
+  parent(): WritableNode | null;
+}
+
+export interface WriteAutomation {
+  elementAt(point: Point): WritableNode | null;
+}
+
+const paragraphEnd = /[\r\n\v\u2029]+$/;
+
+export function trailingBreaks(raw: string): number {
+  return paragraphEnd.exec(raw)?.[0].length ?? 0;
+}
+
+export function selectAt(
+  automation: WriteAutomation,
+  point: Point,
+  expected: string,
+): SelectResult {
+  const target = automation.elementAt(point);
+  if (!target) {
+    return 'nothing';
+  }
+  const held: { release(): void }[] = [target];
+  try {
+    let node: WritableNode | null = target;
+    for (let depth = 0; node && depth <= maxAncestors; depth += 1) {
+      if (node.isPassword()) {
+        return 'unsupported';
+      }
+      const span = depth === 0 ? node.spanAt(point) : node.spanOf(target);
+      if (span) {
+        held.push(span);
+        if (!covers(span.bounds, point)) {
+          return 'nothing';
+        }
+        const raw = span.text();
+        if (normalizeText(raw) !== expected) {
+          return 'moved';
+        }
+        const breaks = trailingBreaks(raw);
+        if (breaks > 0) {
+          span.shrinkEnd(breaks);
+        }
+        span.select();
+        return 'selected';
+      }
+      node = depth < maxAncestors ? node.parent() : null;
+      if (node) {
+        held.push(node);
+      }
+    }
+    return 'nothing';
+  } finally {
+    for (const item of held) {
+      item.release();
+    }
   }
 }

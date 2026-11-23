@@ -5,6 +5,7 @@ import {
   app,
   BrowserWindow,
   clipboard,
+  ClipboardItem,
   desktopCapturer,
   dialog,
   globalShortcut,
@@ -29,11 +30,14 @@ import {
   orbDragEndChannel,
   orbDropChannel,
   orbStateChannel,
+  panelApplyChannel,
   panelCloseChannel,
   panelContentChannel,
   panelCopyChannel,
   panelCurrentChannel,
   panelFixChannel,
+  panelUndoChannel,
+  type ApplyOutcome,
   type ImageScope,
   type PanelContent,
   type ProposalOutcome,
@@ -41,10 +45,13 @@ import {
   type ReadScope,
   type SignedInState,
   type SignInResult,
+  type UndoOutcome,
 } from '../shared/bridge';
+import { canWrite } from '../shared/context';
+import { createClipboardKeeper } from './clipboard';
 import { readConfig } from './config';
 import { createDrag, frameInterval, type Point } from './drag';
-import { createDropReader, dropPoint } from './drop';
+import { createDropReader, dropPoint, hideDelay } from './drop';
 import { createGoogleSignIn, GoogleSignInError } from './google';
 import { createIdentityClient, IdentityError } from './identity';
 import { createInteractionClient } from './interactions';
@@ -76,6 +83,7 @@ import {
   type Activity,
 } from './orb';
 import { isAllowedNavigation } from './security';
+import { createWriter, type WriteTarget } from './writer';
 
 const here = fileURLToPath(new URL('.', import.meta.url));
 const devServerUrl = process.env['ELECTRON_RENDERER_URL'];
@@ -182,6 +190,10 @@ function secretFileAt(path: string): SecretFile {
   };
 }
 
+function windowIcon(): Electron.NativeImage {
+  return nativeImage.createFromPath(join(app.getAppPath(), 'resources', 'icon.png'));
+}
+
 function restingPosition(): [number, number] {
   const display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
   const place = orbRestingPlace(display.workArea, orbSize);
@@ -191,6 +203,8 @@ function restingPosition(): [number, number] {
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
+  app.setAppUserModelId('app.sifer.motion');
+
   app.on('session-created', (created) => {
     created.setSpellCheckerEnabled(false);
     created.setSpellCheckerLanguages([]);
@@ -235,6 +249,14 @@ if (!app.requestSingleInstanceLock()) {
   let panelContent: PanelContent | null = null;
   let bridge: Bridge | null = null;
   let readKey: ShortcutBinding | null = null;
+  let writeTarget: WriteTarget | null = null;
+  let proposal: string | null = null;
+
+  const wait = (milliseconds: number): Promise<void> =>
+    new Promise((resolve) => setTimeout(resolve, milliseconds));
+
+  const toScreen = (point: Point): Point =>
+    process.platform === 'win32' ? screen.dipToScreenPoint(point) : point;
 
   const reader =
     process.platform === 'win32'
@@ -362,9 +384,39 @@ if (!app.requestSingleInstanceLock()) {
         orb.setIgnoreMouseEvents(false);
       }
     },
-    wait: (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds)),
-    read: (point) =>
-      readChain(point, process.platform === 'win32' ? screen.dipToScreenPoint(point) : point),
+    wait,
+    read: (point) => readChain(point, toScreen(point)),
+  });
+
+  const writer = createWriter({
+    select: (point, text) =>
+      reader ? reader.select(point, text) : Promise.resolve('unsupported' as const),
+    front: () => (reader ? reader.front() : Promise.resolve('failed' as const)),
+    keys: (chord) => (reader ? reader.keys(chord) : Promise.resolve('failed' as const)),
+    caret: async () => {
+      if (!reader) {
+        return null;
+      }
+      const { outcome } = await reader.focus();
+      return outcome.ok ? outcome.reading.text : null;
+    },
+    hidden: async <Result>(run: () => Promise<Result>): Promise<Result> => {
+      const target = orb && !orb.isDestroyed() ? orb : null;
+      target?.setIgnoreMouseEvents(true);
+      target?.setOpacity(0);
+      try {
+        await wait(hideDelay);
+        return await run();
+      } finally {
+        if (target && !target.isDestroyed()) {
+          target.setOpacity(1);
+          target.setIgnoreMouseEvents(false);
+        }
+      }
+    },
+    clipboard: createClipboardKeeper(clipboard, (payload) => new ClipboardItem(payload)),
+    settle: wait,
+    now: () => Date.now(),
   });
 
   const ensurePanel = (): BrowserWindow => {
@@ -381,8 +433,15 @@ if (!app.requestSingleInstanceLock()) {
     return created;
   };
 
-  const showPanel = (orbBounds: Electron.Rectangle, content: PanelContent): void => {
+  const showPanel = (
+    orbBounds: Electron.Rectangle,
+    content: PanelContent,
+    writable: WriteTarget | null = null,
+  ): void => {
     panelContent = content;
+    writeTarget = writable;
+    proposal = null;
+    writer.forget();
     const target = ensurePanel();
     const workArea = screen.getDisplayMatching(orbBounds).workArea;
     target.setBounds({ ...panelPlacement(orbBounds, workArea), ...panelSize });
@@ -396,16 +455,21 @@ if (!app.requestSingleInstanceLock()) {
   };
 
   const readAt = async (anchor: Electron.Rectangle): Promise<void> => {
-    if (drops.busy) {
+    if (drops.busy || writer.busy) {
       return;
     }
     activity = 'reading';
     publishOrbState();
-    const content = await drops.read(dropPoint(anchor));
+    const point = dropPoint(anchor);
+    const content = await drops.read(point);
     activity = 'idle';
     publishOrbState();
     if (content) {
-      showPanel(anchor, content);
+      const target =
+        content.outcome.ok && canWrite(content)
+          ? { point: toScreen(point), original: content.outcome.reading.text }
+          : null;
+      showPanel(anchor, content, target);
     }
   };
 
@@ -418,7 +482,7 @@ if (!app.requestSingleInstanceLock()) {
   let focusing = false;
 
   const readFocused = async (): Promise<void> => {
-    if (!orb || orb.isDestroyed() || !orb.isVisible() || drops.busy || focusing) {
+    if (!orb || orb.isDestroyed() || !orb.isVisible() || drops.busy || writer.busy || focusing) {
       return;
     }
     const pointer = pointerAnchor(screen.getCursorScreenPoint(), orbSize);
@@ -528,7 +592,7 @@ if (!app.requestSingleInstanceLock()) {
       signIn.focus();
       return;
     }
-    signIn = new BrowserWindow(signInWindowOptions(preloadPath));
+    signIn = new BrowserWindow({ ...signInWindowOptions(preloadPath), icon: windowIcon() });
     signIn.once('ready-to-show', () => signIn?.show());
     signIn.webContents.once('did-finish-load', () => signIn?.show());
     signIn.on('closed', () => {
@@ -621,6 +685,7 @@ if (!app.requestSingleInstanceLock()) {
           return { ok: false, reason: 'nothing' };
         }
         const outcome = await interactions.propose(panelContent, instruction);
+        proposal = outcome.ok ? outcome.proposal.replacement : null;
         console.log(
           outcome.ok
             ? `fix proposed by ${outcome.proposal.engine}${outcome.proposal.fallback ? ' (fallback)' : ''}`
@@ -629,6 +694,26 @@ if (!app.requestSingleInstanceLock()) {
         return outcome;
       },
     );
+    ipcMain.handle(panelApplyChannel, async (event): Promise<ApplyOutcome> => {
+      if (!panel || event.sender !== panel.webContents || !writeTarget || proposal === null) {
+        return { ok: false, reason: 'nothing' };
+      }
+      const outcome = await writer.apply(writeTarget, proposal);
+      console.log(
+        outcome.ok
+          ? `fix written into the app, ${outcome.verified ? 'verified' : 'not confirmed'}`
+          : `fix not written: ${outcome.reason}`,
+      );
+      return outcome;
+    });
+    ipcMain.handle(panelUndoChannel, async (event): Promise<UndoOutcome> => {
+      if (!panel || event.sender !== panel.webContents) {
+        return { ok: false, reason: 'failed' };
+      }
+      const outcome = await writer.undo();
+      console.log(outcome.ok ? 'fix undone' : `undo refused: ${outcome.reason}`);
+      return outcome;
+    });
     ipcMain.on(panelCopyChannel, (event, text: unknown) => {
       if (panel && event.sender === panel.webContents && typeof text === 'string') {
         clipboard.writeText(text);

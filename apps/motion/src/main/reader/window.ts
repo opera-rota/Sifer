@@ -12,6 +12,7 @@ const rect = koffi.struct('SiferWindowRect', {
 });
 
 const user32 = koffi.load('user32.dll');
+const kernel32 = koffi.load('kernel32.dll');
 const dwmapi = koffi.load('dwmapi.dll');
 const windowFromPoint = user32.func('__stdcall', 'WindowFromPoint', 'void *', [point]);
 const getForegroundWindow = user32.func('void * __stdcall GetForegroundWindow()');
@@ -35,6 +36,19 @@ const getWindowRect = user32.func('__stdcall', 'GetWindowRect', 'int32', [
   'void *',
   koffi.out(koffi.pointer(rect)),
 ]);
+const isWindow = user32.func('int32 __stdcall IsWindow(void *window)');
+const isIconic = user32.func('int32 __stdcall IsIconic(void *window)');
+const showWindow = user32.func('int32 __stdcall ShowWindow(void *window, int32 command)');
+const bringWindowToTop = user32.func('int32 __stdcall BringWindowToTop(void *window)');
+const setForegroundWindow = user32.func('int32 __stdcall SetForegroundWindow(void *window)');
+const attachThreadInput = user32.func(
+  'int32 __stdcall AttachThreadInput(uint32 attach, uint32 to, int32 on)',
+);
+const peekMessage = user32.func(
+  'int32 __stdcall PeekMessageW(void *message, void *window, uint32 first, uint32 last, uint32 remove)',
+);
+const sendInput = user32.func('uint32 __stdcall SendInput(uint32 count, void *inputs, int32 size)');
+const getCurrentThreadId = kernel32.func('uint32 __stdcall GetCurrentThreadId()');
 const dwmGetWindowAttribute = dwmapi.func('__stdcall', 'DwmGetWindowAttribute', 'int32', [
   'void *',
   'uint32',
@@ -43,6 +57,8 @@ const dwmGetWindowAttribute = dwmapi.func('__stdcall', 'DwmGetWindowAttribute', 
 ]);
 
 const rootAncestor = 2;
+const restoreCommand = 9;
+const messageSize = 48;
 const extendedFrameBounds = 9;
 const maxClassLength = 256;
 export const maxTitleLength = 512;
@@ -124,6 +140,58 @@ function infoOf(root: unknown): WindowInfo | null {
 
 export function windowAt(at: Point): WindowInfo | null {
   return infoOf(rootWindowAt(at));
+}
+
+export function sameWindow(first: unknown, second: unknown): boolean {
+  return Boolean(first) && Boolean(second) && koffi.address(first) === koffi.address(second);
+}
+
+function foregroundRoot(): unknown {
+  return rootOf(getForegroundWindow() as unknown);
+}
+
+let queueReady = false;
+
+function ensureMessageQueue(): void {
+  if (!queueReady) {
+    peekMessage(Buffer.alloc(messageSize), null, 0, 0, 0);
+    queueReady = true;
+  }
+}
+
+function threadOf(window: unknown): number {
+  return window ? (getWindowThreadProcessId(window, [0]) as number) : 0;
+}
+
+export function bringToFront(window: unknown): boolean {
+  if (!window || (isWindow(window) as number) === 0) {
+    return false;
+  }
+  if (sameWindow(foregroundRoot(), window)) {
+    return true;
+  }
+  ensureMessageQueue();
+  const ours = getCurrentThreadId() as number;
+  const theirs = threadOf(getForegroundWindow() as unknown);
+  const attached =
+    theirs !== 0 && theirs !== ours && (attachThreadInput(ours, theirs, 1) as number) !== 0;
+  try {
+    if ((isIconic(window) as number) !== 0) {
+      showWindow(window, restoreCommand);
+    }
+    bringWindowToTop(window);
+    setForegroundWindow(window);
+  } finally {
+    if (attached) {
+      attachThreadInput(ours, theirs, 0);
+    }
+  }
+  return sameWindow(foregroundRoot(), window);
+}
+
+export function sendKeys(inputs: Buffer, size: number): boolean {
+  const count = inputs.length / size;
+  return (sendInput(count, inputs, size) as number) === count;
 }
 
 export function foregroundWindow(): WindowInfo | null {

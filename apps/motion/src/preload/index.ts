@@ -10,17 +10,21 @@ import {
   orbDragEndChannel,
   orbDropChannel,
   orbStateChannel,
+  panelApplyChannel,
   panelCloseChannel,
   panelContentChannel,
   panelCopyChannel,
   panelCurrentChannel,
   panelFixChannel,
+  panelUndoChannel,
+  type ApplyOutcome,
   type OrbState,
   type PanelContent,
   type ProposalOutcome,
   type SiferBridge,
   type SignedInState,
   type SignInResult,
+  type UndoOutcome,
 } from '../shared/bridge';
 
 function subscribe<T>(channel: string, listener: (value: T) => void): () => void {
@@ -60,6 +64,8 @@ const bridge: SiferBridge = {
     fix: (instruction: string) =>
       ipcRenderer.invoke(panelFixChannel, instruction) as Promise<ProposalOutcome>,
     copy: (text: string) => ipcRenderer.send(panelCopyChannel, text),
+    apply: () => ipcRenderer.invoke(panelApplyChannel) as Promise<ApplyOutcome>,
+    undo: () => ipcRenderer.invoke(panelUndoChannel) as Promise<UndoOutcome>,
   },
 };
 

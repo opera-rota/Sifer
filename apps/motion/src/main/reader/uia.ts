@@ -21,6 +21,9 @@ import {
   type FocusedElement,
   type ScreenRect,
   type TextHit,
+  type TextSpan,
+  type WritableNode,
+  type WriteAutomation,
 } from './strategy';
 import { rootWindowAt } from './window';
 
@@ -58,6 +61,13 @@ const signatures = {
     'int32',
     pointerOut,
   ]),
+  moveEndpoint: koffi.proto('__stdcall', 'SiferUiaMoveEndpoint', 'int32', [
+    'void *',
+    'int32',
+    'int32',
+    'int32',
+    intOut,
+  ]),
 };
 
 const slots = {
@@ -79,13 +89,14 @@ const slots = {
   textPattern: { rangeFromPoint: 3, rangeFromChild: 4, selection: 5, documentRange: 7 },
   textPattern2: { caretRange: 10 },
   rangeArray: { length: 3, element: 4 },
-  textRange: { expand: 6, boundingRectangles: 10, getText: 12 },
+  textRange: { expand: 6, boundingRectangles: 10, getText: 12, moveEndpointByUnit: 14, select: 16 },
   valuePattern: { value: 4 },
 };
 
 const patterns = { value: 10002, text: 10014, text2: 10024 };
 const maxSelectionRanges = 16;
-const textUnit = { line: 3, paragraph: 4 };
+const textUnit = { character: 0, line: 3, paragraph: 4 };
+const rangeEnd = 1;
 const invalidArgument = 0x80070057 | 0;
 const clsctxInprocServer = 1;
 const coinitMultithreaded = 0;
@@ -183,7 +194,55 @@ function textOf(range: ComObject): string {
   );
 }
 
-class UiaNode implements AutomationNode, FocusedElement {
+class UiaSpan implements TextSpan {
+  readonly bounds: readonly ScreenRect[];
+  readonly #range: ComObject;
+
+  constructor(range: ComObject, bounds: readonly ScreenRect[]) {
+    this.#range = range;
+    this.bounds = bounds;
+  }
+
+  text(): string {
+    return textOf(this.#range);
+  }
+
+  shrinkEnd(characters: number): void {
+    check(
+      'MoveEndpointByUnit',
+      this.#range.call(
+        slots.textRange.moveEndpointByUnit,
+        signatures.moveEndpoint,
+        rangeEnd,
+        textUnit.character,
+        -characters,
+        [0],
+      ),
+    );
+  }
+
+  select(): void {
+    this.#range.invoke('Select', slots.textRange.select, comSignatures.call);
+  }
+
+  release(): void {
+    this.#range.release();
+  }
+}
+
+function spanFrom(range: ComObject | null, shape: (range: ComObject) => readonly ScreenRect[]) {
+  if (!range) {
+    return null;
+  }
+  try {
+    return new UiaSpan(range, shape(range));
+  } catch (error) {
+    range.release();
+    throw error;
+  }
+}
+
+class UiaNode implements AutomationNode, FocusedElement, WritableNode {
   readonly #element: ComObject;
   readonly #walker: ComObject;
 
@@ -258,6 +317,51 @@ class UiaNode implements AutomationNode, FocusedElement {
     });
   }
 
+  spanAt(at: Point): TextSpan | null {
+    return using(this.#pattern(patterns.text, ids.textPattern), (pattern) =>
+      spanFrom(
+        pattern.pointerOut(
+          'RangeFromPoint',
+          slots.textPattern.rangeFromPoint,
+          signatures.atPoint,
+          at,
+        ),
+        (range) => {
+          expand(range, textUnit.line);
+          const bounds = rectsOf(range);
+          if (covers(bounds, at)) {
+            expand(range, textUnit.paragraph);
+          }
+          return bounds;
+        },
+      ),
+    );
+  }
+
+  spanOf(child: WritableNode): TextSpan | null {
+    if (!(child instanceof UiaNode)) {
+      return null;
+    }
+    return using(this.#pattern(patterns.text, ids.textPattern), (pattern) => {
+      try {
+        return spanFrom(
+          pattern.pointerOut(
+            'RangeFromChild',
+            slots.textPattern.rangeFromChild,
+            signatures.parentOf,
+            child.#element.pointer,
+          ),
+          rectsOf,
+        );
+      } catch (error) {
+        if (error instanceof ComError && error.hresult === invalidArgument) {
+          return null;
+        }
+        throw error;
+      }
+    });
+  }
+
   bounds(): ScreenRect | null {
     const box = { left: 0, top: 0, right: 0, bottom: 0 };
     check(
@@ -312,15 +416,15 @@ class UiaNode implements AutomationNode, FocusedElement {
     );
   }
 
-  parent(): AutomationNode | null {
+  parent(): UiaNode | null {
     return this.#walk('GetParentElement', slots.walker.parent);
   }
 
-  firstChild(): AutomationNode | null {
+  firstChild(): UiaNode | null {
     return this.#walk('GetFirstChildElement', slots.walker.firstChild);
   }
 
-  nextSibling(): AutomationNode | null {
+  nextSibling(): UiaNode | null {
     return this.#walk('GetNextSiblingElement', slots.walker.nextSibling);
   }
 
@@ -328,7 +432,7 @@ class UiaNode implements AutomationNode, FocusedElement {
     this.#element.release();
   }
 
-  #walk(operation: string, slot: number): AutomationNode | null {
+  #walk(operation: string, slot: number): UiaNode | null {
     const found = this.#walker.pointerOut(
       operation,
       slot,
@@ -393,7 +497,8 @@ class UiaNode implements AutomationNode, FocusedElement {
   }
 }
 
-export interface UiAutomation extends Automation, FocusAutomation {
+export interface UiAutomation extends Automation, FocusAutomation, WriteAutomation {
+  elementAt(point: Point): WritableNode | null;
   dispose(): void;
 }
 
@@ -426,7 +531,7 @@ export function createUiAutomation(): UiAutomation {
       throw new Error('ui automation returned no tree walker');
     }
     return {
-      elementAt(at: Point): AutomationNode | null {
+      elementAt(at: Point): UiaNode | null {
         const element = automation.pointerOut(
           'ElementFromPoint',
           slots.automation.elementFromPoint,

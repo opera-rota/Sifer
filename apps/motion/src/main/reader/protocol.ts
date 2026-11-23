@@ -8,7 +8,17 @@ import type {
 
 export type PointOperation = 'read' | 'page' | 'app' | 'focus' | 'foreground';
 
-export type ReaderOperation = PointOperation | 'ocr';
+export type TargetOperation = 'front' | 'keys';
+
+export type ReaderOperation = PointOperation | TargetOperation | 'ocr' | 'select';
+
+export type SelectResult = 'selected' | 'moved' | 'nothing' | 'unsupported' | 'blocked' | 'failed';
+
+export type TargetResult = 'ready' | 'blocked' | 'failed';
+
+export type Chord = 'paste' | 'undo';
+
+export const maxSelectText = 20_000;
 
 export const maxImagePixels = 16_000_000;
 
@@ -31,7 +41,26 @@ export interface OcrRequest {
   readonly pixels: Uint8Array;
 }
 
-export type ReadRequest = PointRequest | OcrRequest;
+export interface SelectRequest {
+  readonly id: number;
+  readonly op: 'select';
+  readonly x: number;
+  readonly y: number;
+  readonly text: string;
+}
+
+export interface FrontRequest {
+  readonly id: number;
+  readonly op: 'front';
+}
+
+export interface KeysRequest {
+  readonly id: number;
+  readonly op: 'keys';
+  readonly chord: Chord;
+}
+
+export type ReadRequest = PointRequest | OcrRequest | SelectRequest | FrontRequest | KeysRequest;
 
 export interface WindowFrame {
   readonly x: number;
@@ -56,7 +85,9 @@ export interface FocusReading {
 export type ReaderReply =
   | { readonly id: number; readonly outcome: ReadOutcome }
   | { readonly id: number; readonly focus: FocusReading }
-  | { readonly id: number; readonly app: WindowInfo | null };
+  | { readonly id: number; readonly app: WindowInfo | null }
+  | { readonly id: number; readonly select: SelectResult }
+  | { readonly id: number; readonly target: TargetResult };
 
 const failures: ReadonlySet<string> = new Set<ReadFailure>([
   'nothing',
@@ -77,6 +108,19 @@ const pointOperations: ReadonlySet<unknown> = new Set<PointOperation>([
   'focus',
   'foreground',
 ]);
+
+const selectResults: ReadonlySet<unknown> = new Set<SelectResult>([
+  'selected',
+  'moved',
+  'nothing',
+  'unsupported',
+  'blocked',
+  'failed',
+]);
+
+const targetResults: ReadonlySet<unknown> = new Set<TargetResult>(['ready', 'blocked', 'failed']);
+
+const chords: ReadonlySet<unknown> = new Set<Chord>(['paste', 'undo']);
 
 const scopes: ReadonlySet<unknown> = new Set<ImageScope>(['point', 'page']);
 
@@ -140,16 +184,31 @@ function isWindowInfo(value: unknown): value is WindowInfo {
   );
 }
 
+function hasPoint(value: Record<string, unknown>): boolean {
+  return Number.isInteger(value['x']) && Number.isInteger(value['y']);
+}
+
+function isSelectText(value: unknown): boolean {
+  return typeof value === 'string' && value !== '' && value.length <= maxSelectText;
+}
+
 export function isReadRequest(value: unknown): value is ReadRequest {
-  if (
-    !isRecord(value) ||
-    !isId(value['id']) ||
-    !Number.isInteger(value['x']) ||
-    !Number.isInteger(value['y'])
-  ) {
+  if (!isRecord(value) || !isId(value['id'])) {
     return false;
   }
   const op = value['op'];
+  if (op === 'front') {
+    return true;
+  }
+  if (op === 'keys') {
+    return chords.has(value['chord']);
+  }
+  if (!hasPoint(value)) {
+    return false;
+  }
+  if (op === 'select') {
+    return isSelectText(value['text']);
+  }
   return pointOperations.has(op) || (op === 'ocr' && isImage(value));
 }
 
@@ -182,6 +241,12 @@ export function isReaderReply(value: unknown): value is ReaderReply {
   }
   if ('focus' in value) {
     return isFocusReading(value['focus']);
+  }
+  if ('select' in value) {
+    return selectResults.has(value['select']);
+  }
+  if ('target' in value) {
+    return targetResults.has(value['target']);
   }
   return value['app'] === null || isWindowInfo(value['app']);
 }

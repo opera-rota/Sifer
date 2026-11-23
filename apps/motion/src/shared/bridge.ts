@@ -66,12 +66,25 @@ export interface Proposal {
 
 export type ProposalOutcome = { ok: true; proposal: Proposal } | { ok: false; reason: FixFailure };
 
+export const undoWindow = 30_000;
+
+export type ApplyFailure = 'nothing' | 'moved' | 'unsupported' | 'blocked' | 'failed';
+
+export type ApplyOutcome =
+  { ok: true; verified: boolean; undoUntil: number } | { ok: false; reason: ApplyFailure };
+
+export type UndoFailure = 'expired' | 'changed' | 'blocked' | 'failed';
+
+export type UndoOutcome = { ok: true } | { ok: false; reason: UndoFailure };
+
 export interface PanelControls {
   current(): Promise<PanelContent | null>;
   onContent(listener: (content: PanelContent) => void): () => void;
   close(): void;
   fix(instruction: string): Promise<ProposalOutcome>;
   copy(text: string): void;
+  apply(): Promise<ApplyOutcome>;
+  undo(): Promise<UndoOutcome>;
 }
 
 export interface SiferBridge {
@@ -88,6 +101,8 @@ export const panelContentChannel = 'sifer:panel-content';
 export const panelCloseChannel = 'sifer:panel-close';
 export const panelFixChannel = 'sifer:panel-fix';
 export const panelCopyChannel = 'sifer:panel-copy';
+export const panelApplyChannel = 'sifer:panel-apply';
+export const panelUndoChannel = 'sifer:panel-undo';
 export const orbStateChannel = 'sifer:orb-state';
 export const authStateChannel = 'sifer:auth-state';
 export const authSignInChannel = 'sifer:auth-sign-in';

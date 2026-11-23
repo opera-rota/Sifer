@@ -7,18 +7,23 @@ import {
   recognizeDeadline,
   type TextRecognizer,
 } from './ocr';
+import { chordInputs, inputSize } from './keys';
 import {
   isReadRequest,
+  type Chord,
   type FocusReading,
   type OcrRequest,
   type PointRequest,
   type ReaderReply,
   type ReadRequest,
+  type SelectRequest,
+  type SelectResult,
+  type TargetResult,
   type WindowInfo,
 } from './protocol';
-import { focusAt, pageAt, readAt, type Automation } from './strategy';
+import { focusAt, pageAt, readAt, selectAt, type Automation } from './strategy';
 import { createUiAutomation, type UiAutomation } from './uia';
-import { foregroundWindow, windowAt } from './window';
+import { bringToFront, foregroundWindow, rootWindowAt, sendKeys, windowAt } from './window';
 
 const port = process.parentPort;
 if (!port) {
@@ -78,6 +83,52 @@ function focus(): FocusReading {
   }
 }
 
+let target: unknown = null;
+
+function select(request: SelectRequest): SelectResult {
+  const connected = automation.get();
+  if (!connected) {
+    return 'unsupported';
+  }
+  try {
+    const point = { x: request.x, y: request.y };
+    const window = rootWindowAt(point);
+    if (!window) {
+      return 'nothing';
+    }
+    target = window;
+    if (!bringToFront(window)) {
+      return 'blocked';
+    }
+    return selectAt(connected, point, request.text);
+  } catch (error) {
+    console.error('ui automation select failed', error);
+    return 'failed';
+  }
+}
+
+function front(): TargetResult {
+  try {
+    return target && bringToFront(target) ? 'ready' : 'blocked';
+  } catch (error) {
+    console.error('bringing the target window forward failed', error);
+    return 'failed';
+  }
+}
+
+function press(chord: Chord): TargetResult {
+  const ready = front();
+  if (ready !== 'ready') {
+    return ready;
+  }
+  try {
+    return sendKeys(chordInputs(chord), inputSize) ? 'ready' : 'failed';
+  } catch (error) {
+    console.error(`sending ${chord} failed`, error);
+    return 'failed';
+  }
+}
+
 function lookup(find: () => WindowInfo | null): WindowInfo | null {
   try {
     return find();
@@ -116,6 +167,12 @@ function answer(request: ReadRequest): ReaderReply {
       return { id: request.id, app: lookup(foregroundWindow) };
     case 'focus':
       return { id: request.id, focus: focus() };
+    case 'select':
+      return { id: request.id, select: select(request) };
+    case 'front':
+      return { id: request.id, target: front() };
+    case 'keys':
+      return { id: request.id, target: press(request.chord) };
     case 'ocr':
       return { id: request.id, outcome: recognize(request) };
     case 'page':

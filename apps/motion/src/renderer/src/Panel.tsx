@@ -1,17 +1,21 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import '@fontsource-variable/exo-2';
-import type {
-  FixFailure,
-  PanelContent,
-  Proposal,
-  ReadFailure,
-  Reading,
-  ReadingKind,
-  ReadScope,
+import {
+  undoWindow,
+  type ApplyFailure,
+  type FixFailure,
+  type PanelContent,
+  type Proposal,
+  type ReadFailure,
+  type Reading,
+  type ReadingKind,
+  type ReadScope,
+  type UndoFailure,
 } from '../../shared/bridge';
+import { canWrite } from '../../shared/context';
 import { Aurora } from './Aurora';
 import { ContextPreview } from './ContextPreview';
-import { Close, CopyMark, Rewind, Sparkle } from './Glyphs';
+import { Caution, Check, Close, CopyMark, Rewind, Sparkle, UndoArrow, WriteIn } from './Glyphs';
 import brand from './assets/brand.png';
 import mantis from './assets/mantis.webp';
 import './panel.css';
@@ -33,6 +37,21 @@ const fixFailureText: Record<FixFailure, string> = {
   timeout: 'Sifer took too long to answer. Try again.',
 };
 
+const applyFailureText: Record<ApplyFailure, string> = {
+  nothing: 'There is nothing to write.',
+  moved: 'The text changed since Sifer read it. Drop the orb on it again.',
+  unsupported: 'Sifer cannot write into this app yet. Copy the text instead.',
+  blocked: 'Windows kept the app in the background. Click it once, then Apply again.',
+  failed: 'Sifer could not write the text. Copy it instead.',
+};
+
+const undoFailureText: Record<UndoFailure, string> = {
+  expired: 'The undo window has closed. Use Ctrl+Z in the app.',
+  changed: 'The text was edited after Sifer wrote it, so Sifer left it alone.',
+  blocked: 'Windows kept the app in the background. Use Ctrl+Z in the app.',
+  failed: 'Sifer could not undo. Use Ctrl+Z in the app.',
+};
+
 const kindText: Record<ReadingKind, string> = {
   text: 'Paragraph',
   value: 'Field value',
@@ -51,11 +70,35 @@ const defaultInstruction: Record<ReadScope, string> = {
   focus: '',
 };
 
+interface Note {
+  readonly text: string;
+  readonly tone: 'info' | 'error';
+}
+
+type Write =
+  | { stage: 'ready'; note?: Note }
+  | { stage: 'writing' }
+  | { stage: 'written'; verified: boolean; undoUntil: number; note?: Note }
+  | { stage: 'undoing'; verified: boolean; undoUntil: number };
+
 type Fix =
   | { status: 'idle' }
   | { status: 'working' }
-  | { status: 'proposed'; proposal: Proposal }
+  | { status: 'proposed'; proposal: Proposal; write: Write }
   | { status: 'failed'; reason: FixFailure };
+
+function useNow(active: boolean): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!active) {
+      return;
+    }
+    setNow(Date.now());
+    const timer = setInterval(() => setNow(Date.now()), 250);
+    return () => clearInterval(timer);
+  }, [active]);
+  return now;
+}
 
 function failureOf(scope: ReadScope, reason: ReadFailure): string {
   return scope === 'focus' && reason === 'nothing'
@@ -114,11 +157,25 @@ export function Panel() {
   const outcome = content?.outcome ?? null;
   const scope = content?.scope ?? 'point';
   const working = fix.status === 'working';
+  const write = fix.status === 'proposed' ? fix.write : null;
+  const counting = write?.stage === 'written' || write?.stage === 'undoing';
+  const now = useNow(counting);
+  const undoUntil = counting ? write.undoUntil : 0;
+  const secondsLeft = Math.max(0, Math.ceil((undoUntil - now) / 1000));
+  const writable = content !== null && canWrite(content);
+  const appLabel = content?.app ?? 'the app';
+
+  const updateWrite = (asked: number, next: Write): void => {
+    if (generation.current !== asked) {
+      return;
+    }
+    setFix((current) => (current.status === 'proposed' ? { ...current, write: next } : current));
+  };
 
   const submit = (event: FormEvent): void => {
     event.preventDefault();
     const text = instruction.trim();
-    if (text === '' || working) {
+    if (text === '' || working || write?.stage === 'writing') {
       return;
     }
     const asked = generation.current;
@@ -129,10 +186,44 @@ export function Panel() {
       }
       setFix(
         result.ok
-          ? { status: 'proposed', proposal: result.proposal }
+          ? { status: 'proposed', proposal: result.proposal, write: { stage: 'ready' } }
           : { status: 'failed', reason: result.reason },
       );
     });
+  };
+
+  const apply = (): void => {
+    const asked = generation.current;
+    updateWrite(asked, { stage: 'writing' });
+    void window.sifer.panel
+      .apply()
+      .then((result) =>
+        updateWrite(
+          asked,
+          result.ok
+            ? { stage: 'written', verified: result.verified, undoUntil: result.undoUntil }
+            : { stage: 'ready', note: { text: applyFailureText[result.reason], tone: 'error' } },
+        ),
+      );
+  };
+
+  const undo = (written: Extract<Write, { stage: 'written' }>): void => {
+    const asked = generation.current;
+    updateWrite(asked, {
+      stage: 'undoing',
+      verified: written.verified,
+      undoUntil: written.undoUntil,
+    });
+    void window.sifer.panel
+      .undo()
+      .then((result) =>
+        updateWrite(
+          asked,
+          result.ok
+            ? { stage: 'ready', note: { text: `Original restored in ${appLabel}.`, tone: 'info' } }
+            : { ...written, note: { text: undoFailureText[result.reason], tone: 'error' } },
+        ),
+      );
   };
 
   return (
@@ -154,31 +245,94 @@ export function Panel() {
         {outcome?.ok && fix.status !== 'proposed' && (
           <p className="panel-text">{outcome.reading.text}</p>
         )}
-        {fix.status === 'proposed' && (
+        {fix.status === 'proposed' && write && (
           <>
-            <div className="panel-proposal-head">
-              <Sparkle className="panel-label-mark" />
-              <span className="panel-label">
-                Suggested{fix.proposal.fallback ? ' (backup model)' : ''}
-              </span>
-              <button
-                type="button"
-                className="panel-action"
-                onClick={() => window.sifer.panel.copy(fix.proposal.replacement)}
-              >
-                <CopyMark />
-                Copy
-              </button>
-              <button
-                type="button"
-                className="panel-action"
-                onClick={() => setFix({ status: 'idle' })}
-              >
-                <Rewind />
-                Original
-              </button>
-            </div>
+            {(write.stage === 'ready' || write.stage === 'writing') && (
+              <div className="panel-proposal-head">
+                <Sparkle className="panel-label-mark" />
+                <span className="panel-label">
+                  Suggested{fix.proposal.fallback ? ' (backup model)' : ''}
+                </span>
+                {writable && (
+                  <button
+                    type="button"
+                    className={write.stage === 'writing' ? 'panel-apply working' : 'panel-apply'}
+                    disabled={write.stage === 'writing'}
+                    onClick={apply}
+                  >
+                    <WriteIn />
+                    {write.stage === 'writing' ? 'Writing' : 'Apply'}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="panel-action"
+                  onClick={() => window.sifer.panel.copy(fix.proposal.replacement)}
+                >
+                  <CopyMark />
+                  Copy
+                </button>
+                <button
+                  type="button"
+                  className="panel-action"
+                  disabled={write.stage === 'writing'}
+                  onClick={() => setFix({ status: 'idle' })}
+                >
+                  <Rewind />
+                  Original
+                </button>
+              </div>
+            )}
+            {(write.stage === 'written' || write.stage === 'undoing') && (
+              <>
+                <div className="panel-proposal-head">
+                  {write.verified ? (
+                    <Check className="panel-label-mark" />
+                  ) : (
+                    <Caution className="panel-label-mark caution" />
+                  )}
+                  <span className={write.verified ? 'panel-label' : 'panel-label caution'}>
+                    {write.verified ? `Applied in ${appLabel}` : 'Not confirmed'}
+                  </span>
+                  {secondsLeft > 0 && (
+                    <button
+                      type="button"
+                      className="panel-action panel-undo"
+                      disabled={write.stage === 'undoing'}
+                      onClick={() => write.stage === 'written' && undo(write)}
+                    >
+                      <UndoArrow />
+                      {write.stage === 'undoing' ? 'Undoing' : `Undo ${secondsLeft}s`}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="panel-action"
+                    onClick={() => window.sifer.panel.copy(fix.proposal.replacement)}
+                  >
+                    <CopyMark />
+                    Copy
+                  </button>
+                </div>
+                {secondsLeft > 0 && (
+                  <div className="panel-timer" aria-hidden="true">
+                    <span
+                      style={{ width: `${Math.min(100, ((undoUntil - now) / undoWindow) * 100)}%` }}
+                    />
+                  </div>
+                )}
+                {!write.verified && (
+                  <p className="panel-caution">
+                    Sifer wrote the text but could not read it back. Check {appLabel}, or copy it
+                    from here.
+                  </p>
+                )}
+              </>
+            )}
             <p className="panel-text panel-proposal">{fix.proposal.replacement}</p>
+            {'note' in write && write.note && (
+              <p className={`panel-write-note ${write.note.tone}`}>{write.note.text}</p>
+            )}
           </>
         )}
         {fix.status === 'failed' && <p className="panel-error">{fixFailureText[fix.reason]}</p>}

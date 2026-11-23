@@ -8,6 +8,8 @@ import {
   pageOcrTimeout,
   pageTimeout,
   readTimeout,
+  selectTimeout,
+  targetTimeout,
 } from './client';
 import type { ReadRequest } from './protocol';
 
@@ -143,6 +145,37 @@ describe('createReaderClient', () => {
     expect(workers).toHaveLength(1);
     worker().reply(2, reading);
     await expect(read).resolves.toEqual(reading);
+  });
+
+  it('selects text, brings the target forward and sends key chords', async () => {
+    const selected = client.select({ x: 10.4, y: 20.6 }, 'Hello');
+    const front = client.front();
+    const keys = client.keys('paste');
+    expect(worker().sent).toEqual([
+      { id: 1, op: 'select', x: 10, y: 21, text: 'Hello' },
+      { id: 2, op: 'front' },
+      { id: 3, op: 'keys', chord: 'paste' },
+    ]);
+    worker().emit('message', { id: 1, select: 'selected' });
+    worker().emit('message', { id: 2, target: 'ready' });
+    worker().emit('message', { id: 3, target: 'blocked' });
+    await expect(selected).resolves.toBe('selected');
+    await expect(front).resolves.toBe('ready');
+    await expect(keys).resolves.toBe('blocked');
+  });
+
+  it('gives up on a stuck selection by replacing the reader', async () => {
+    const selected = client.select({ x: 1, y: 1 }, 'Hello');
+    await vi.advanceTimersByTimeAsync(selectTimeout);
+    await expect(selected).resolves.toBe('failed');
+    expect(worker().terminated).toBe(true);
+  });
+
+  it('times out key chords without killing the reader', async () => {
+    const keys = client.keys('undo');
+    await vi.advanceTimersByTimeAsync(targetTimeout);
+    await expect(keys).resolves.toBe('failed');
+    expect(worker().terminated).toBe(false);
   });
 
   it('ignores malformed replies', async () => {

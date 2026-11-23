@@ -1,4 +1,4 @@
-import type { Reading, ReadingSource, ReadScope } from './bridge';
+import type { PanelContent, Reading, ReadingSource, ReadScope } from './bridge';
 
 export type Confidence = 'high' | 'medium' | 'low';
 
@@ -60,4 +60,13 @@ export function confidenceOf(scope: ReadScope, reading: Reading): Confidence {
     case 'screenshot':
       return scope === 'point' ? 'medium' : 'low';
   }
+}
+
+export function canWrite(content: PanelContent): boolean {
+  return (
+    content.scope === 'point' &&
+    content.outcome.ok &&
+    content.outcome.reading.source === 'accessibility' &&
+    content.outcome.reading.kind === 'text'
+  );
 }

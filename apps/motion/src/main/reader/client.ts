@@ -2,12 +2,18 @@ import type { ImageScope, ReadOutcome } from '../../shared/bridge';
 import type { Point } from '../drag';
 import {
   isReaderReply,
+  type Chord,
   type FocusReading,
+  type FrontRequest,
+  type KeysRequest,
   type OcrRequest,
   type PointRequest,
   type ReaderOperation,
   type ReaderReply,
   type ReadRequest,
+  type SelectRequest,
+  type SelectResult,
+  type TargetResult,
   type WindowInfo,
 } from './protocol';
 
@@ -17,6 +23,8 @@ export const appTimeout = 300;
 export const focusTimeout = 1500;
 export const ocrTimeout = 3000;
 export const pageOcrTimeout = 6000;
+export const selectTimeout = 2000;
+export const targetTimeout = 1000;
 
 export interface ReaderWorker {
   postMessage(request: ReadRequest): void;
@@ -32,6 +40,8 @@ export interface ReaderClientDependencies {
   focusTimeout?: number;
   ocrTimeout?: number;
   pageOcrTimeout?: number;
+  selectTimeout?: number;
+  targetTimeout?: number;
 }
 
 export interface CapturedImage {
@@ -44,9 +54,19 @@ export interface CapturedImage {
 
 type Settle = (reply: ReaderReply | null, reason: 'timeout' | 'failed') => void;
 
-type Outgoing = Omit<PointRequest, 'id'> | Omit<OcrRequest, 'id'>;
+type Outgoing =
+  | Omit<PointRequest, 'id'>
+  | Omit<OcrRequest, 'id'>
+  | Omit<SelectRequest, 'id'>
+  | Omit<FrontRequest, 'id'>
+  | Omit<KeysRequest, 'id'>;
 
-const lookups: ReadonlySet<ReaderOperation> = new Set<ReaderOperation>(['app', 'foreground']);
+const lookups: ReadonlySet<ReaderOperation> = new Set<ReaderOperation>([
+  'app',
+  'foreground',
+  'front',
+  'keys',
+]);
 
 export function createReaderClient(dependencies: ReaderClientDependencies) {
   const timeouts: Record<ReaderOperation, number> = {
@@ -56,6 +76,9 @@ export function createReaderClient(dependencies: ReaderClientDependencies) {
     foreground: dependencies.appTimeout ?? appTimeout,
     focus: dependencies.focusTimeout ?? focusTimeout,
     ocr: dependencies.ocrTimeout ?? ocrTimeout,
+    select: dependencies.selectTimeout ?? selectTimeout,
+    front: dependencies.targetTimeout ?? targetTimeout,
+    keys: dependencies.targetTimeout ?? targetTimeout,
   };
   const timeoutOf = (outgoing: Outgoing): number =>
     outgoing.op === 'ocr' && outgoing.scope === 'page'
@@ -121,6 +144,11 @@ export function createReaderClient(dependencies: ReaderClientDependencies) {
     return reply && 'app' in reply ? reply.app : null;
   };
 
+  const targetOf = async (outgoing: Outgoing): Promise<TargetResult> => {
+    const { reply } = await request(outgoing);
+    return reply && 'target' in reply ? reply.target : 'failed';
+  };
+
   return {
     read(point: Point): Promise<ReadOutcome> {
       return outcomeOf({ op: 'read', x: Math.round(point.x), y: Math.round(point.y) });
@@ -151,6 +179,21 @@ export function createReaderClient(dependencies: ReaderClientDependencies) {
         height: image.height,
         pixels: image.pixels,
       });
+    },
+    async select(point: Point, text: string): Promise<SelectResult> {
+      const { reply } = await request({
+        op: 'select',
+        x: Math.round(point.x),
+        y: Math.round(point.y),
+        text,
+      });
+      return reply && 'select' in reply ? reply.select : 'failed';
+    },
+    front(): Promise<TargetResult> {
+      return targetOf({ op: 'front' });
+    },
+    keys(chord: Chord): Promise<TargetResult> {
+      return targetOf({ op: 'keys', chord });
     },
     close(): void {
       if (worker) {
