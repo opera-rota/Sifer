@@ -2,11 +2,49 @@ syntax = "proto3";
 
 package sifer.v1;
 
-message DropContext {}
+enum DropReader {
+  DROP_READER_UNSPECIFIED = 0;
+  DROP_READER_DOM = 1;
+  DROP_READER_ACCESSIBILITY = 2;
+  DROP_READER_SCREENSHOT = 3;
+}
 
-message Instruction {}
+enum DropScope {
+  DROP_SCOPE_UNSPECIFIED = 0;
+  DROP_SCOPE_POINT = 1;
+  DROP_SCOPE_PAGE = 2;
+  DROP_SCOPE_FOCUS = 3;
+}
 
-message FixPlan {}
+message Bounds {
+  int32 x = 1;
+  int32 y = 2;
+  int32 width = 3;
+  int32 height = 4;
+}
+
+message DropContext {
+  DropReader reader = 1;
+  DropScope scope = 2;
+  string app_key = 3;
+  string element_role = 4;
+  string content = 5;
+  Bounds bounds = 6;
+  float confidence = 7;
+  string window_title = 8;
+}
+
+message Instruction {
+  string text = 1;
+}
+
+message FixPlan {
+  string fix_key = 1;
+  string replacement = 2;
+  string expect_prefix = 3;
+  string engine = 4;
+  bool fallback = 5;
+}
 
 message ActionPlan {}
 

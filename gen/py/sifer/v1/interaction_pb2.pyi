@@ -5,6 +5,7 @@ isort:skip_file
 
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
+from google.protobuf.internal import enum_type_wrapper as _enum_type_wrapper
 import builtins as _builtins
 import sys
 import typing as _typing
@@ -16,16 +17,108 @@ else:
 
 DESCRIPTOR: _descriptor.FileDescriptor
 
+class _DropReader:
+    ValueType = _typing.NewType("ValueType", _builtins.int)
+    V: _TypeAlias = ValueType  # noqa: Y015
+
+class _DropReaderEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_DropReader.ValueType], _builtins.type):
+    DESCRIPTOR: _descriptor.EnumDescriptor
+    DROP_READER_UNSPECIFIED: _DropReader.ValueType  # 0
+    DROP_READER_DOM: _DropReader.ValueType  # 1
+    DROP_READER_ACCESSIBILITY: _DropReader.ValueType  # 2
+    DROP_READER_SCREENSHOT: _DropReader.ValueType  # 3
+
+class DropReader(_DropReader, metaclass=_DropReaderEnumTypeWrapper): ...
+
+DROP_READER_UNSPECIFIED: DropReader.ValueType  # 0
+DROP_READER_DOM: DropReader.ValueType  # 1
+DROP_READER_ACCESSIBILITY: DropReader.ValueType  # 2
+DROP_READER_SCREENSHOT: DropReader.ValueType  # 3
+Global___DropReader: _TypeAlias = DropReader  # noqa: Y015
+
+class _DropScope:
+    ValueType = _typing.NewType("ValueType", _builtins.int)
+    V: _TypeAlias = ValueType  # noqa: Y015
+
+class _DropScopeEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_DropScope.ValueType], _builtins.type):
+    DESCRIPTOR: _descriptor.EnumDescriptor
+    DROP_SCOPE_UNSPECIFIED: _DropScope.ValueType  # 0
+    DROP_SCOPE_POINT: _DropScope.ValueType  # 1
+    DROP_SCOPE_PAGE: _DropScope.ValueType  # 2
+    DROP_SCOPE_FOCUS: _DropScope.ValueType  # 3
+
+class DropScope(_DropScope, metaclass=_DropScopeEnumTypeWrapper): ...
+
+DROP_SCOPE_UNSPECIFIED: DropScope.ValueType  # 0
+DROP_SCOPE_POINT: DropScope.ValueType  # 1
+DROP_SCOPE_PAGE: DropScope.ValueType  # 2
+DROP_SCOPE_FOCUS: DropScope.ValueType  # 3
+Global___DropScope: _TypeAlias = DropScope  # noqa: Y015
+
+@_typing.final
+class Bounds(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    X_FIELD_NUMBER: _builtins.int
+    Y_FIELD_NUMBER: _builtins.int
+    WIDTH_FIELD_NUMBER: _builtins.int
+    HEIGHT_FIELD_NUMBER: _builtins.int
+    x: _builtins.int
+    y: _builtins.int
+    width: _builtins.int
+    height: _builtins.int
+    def __init__(
+        self,
+        *,
+        x: _builtins.int = ...,
+        y: _builtins.int = ...,
+        width: _builtins.int = ...,
+        height: _builtins.int = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["height", b"height", "width", b"width", "x", b"x", "y", b"y"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+Global___Bounds: _TypeAlias = Bounds  # noqa: Y015
+
 @_typing.final
 class DropContext(_message.Message):
     DESCRIPTOR: _descriptor.Descriptor
 
+    READER_FIELD_NUMBER: _builtins.int
+    SCOPE_FIELD_NUMBER: _builtins.int
+    APP_KEY_FIELD_NUMBER: _builtins.int
+    ELEMENT_ROLE_FIELD_NUMBER: _builtins.int
+    CONTENT_FIELD_NUMBER: _builtins.int
+    BOUNDS_FIELD_NUMBER: _builtins.int
+    CONFIDENCE_FIELD_NUMBER: _builtins.int
+    WINDOW_TITLE_FIELD_NUMBER: _builtins.int
+    reader: Global___DropReader.ValueType
+    scope: Global___DropScope.ValueType
+    app_key: _builtins.str
+    element_role: _builtins.str
+    content: _builtins.str
+    confidence: _builtins.float
+    window_title: _builtins.str
+    @_builtins.property
+    def bounds(self) -> Global___Bounds: ...
     def __init__(
         self,
+        *,
+        reader: Global___DropReader.ValueType = ...,
+        scope: Global___DropScope.ValueType = ...,
+        app_key: _builtins.str = ...,
+        element_role: _builtins.str = ...,
+        content: _builtins.str = ...,
+        bounds: Global___Bounds | None = ...,
+        confidence: _builtins.float = ...,
+        window_title: _builtins.str = ...,
     ) -> None: ...
-    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    _HasFieldArgType: _TypeAlias = _typing.Literal["bounds", b"bounds"]  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["app_key", b"app_key", "bounds", b"bounds", "confidence", b"confidence", "content", b"content", "element_role", b"element_role", "reader", b"reader", "scope", b"scope", "window_title", b"window_title"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
     def WhichOneof(self, oneof_group: _Never) -> None: ...
 
@@ -35,12 +128,16 @@ Global___DropContext: _TypeAlias = DropContext  # noqa: Y015
 class Instruction(_message.Message):
     DESCRIPTOR: _descriptor.Descriptor
 
+    TEXT_FIELD_NUMBER: _builtins.int
+    text: _builtins.str
     def __init__(
         self,
+        *,
+        text: _builtins.str = ...,
     ) -> None: ...
     _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["text", b"text"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
     def WhichOneof(self, oneof_group: _Never) -> None: ...
 
@@ -50,12 +147,28 @@ Global___Instruction: _TypeAlias = Instruction  # noqa: Y015
 class FixPlan(_message.Message):
     DESCRIPTOR: _descriptor.Descriptor
 
+    FIX_KEY_FIELD_NUMBER: _builtins.int
+    REPLACEMENT_FIELD_NUMBER: _builtins.int
+    EXPECT_PREFIX_FIELD_NUMBER: _builtins.int
+    ENGINE_FIELD_NUMBER: _builtins.int
+    FALLBACK_FIELD_NUMBER: _builtins.int
+    fix_key: _builtins.str
+    replacement: _builtins.str
+    expect_prefix: _builtins.str
+    engine: _builtins.str
+    fallback: _builtins.bool
     def __init__(
         self,
+        *,
+        fix_key: _builtins.str = ...,
+        replacement: _builtins.str = ...,
+        expect_prefix: _builtins.str = ...,
+        engine: _builtins.str = ...,
+        fallback: _builtins.bool = ...,
     ) -> None: ...
     _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["engine", b"engine", "expect_prefix", b"expect_prefix", "fallback", b"fallback", "fix_key", b"fix_key", "replacement", b"replacement"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
     def WhichOneof(self, oneof_group: _Never) -> None: ...
 

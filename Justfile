@@ -62,7 +62,7 @@ motion-package:
     pnpm --filter @sifer/motion package
 
 orchestrator:
-    uv run --locked --all-packages sifer-orchestrator
+    Import-Module ./tools/DevSecrets.psm1 -Force; Start-SiferOrchestrator
 
 obs-up:
     docker compose -f infra/observability/compose.yml up --detach --wait --wait-timeout 300

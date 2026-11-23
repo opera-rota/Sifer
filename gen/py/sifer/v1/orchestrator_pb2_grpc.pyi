@@ -32,11 +32,13 @@ class OrchestratorServiceStub:
     @_typing.overload
     def __new__(cls, channel: _aio.Channel) -> OrchestratorServiceAsyncStub: ...
     Echo: _grpc.UnaryUnaryMultiCallable[_orchestrator_pb2.EchoRequest, _orchestrator_pb2.EchoResponse]
+    Resolve: _grpc.UnaryUnaryMultiCallable[_orchestrator_pb2.ResolveRequest, _orchestrator_pb2.ResolveResponse]
 
 @_typing.type_check_only
 class OrchestratorServiceAsyncStub(OrchestratorServiceStub):
     def __init__(self, channel: _aio.Channel) -> None: ...
     Echo: _aio.UnaryUnaryMultiCallable[_orchestrator_pb2.EchoRequest, _orchestrator_pb2.EchoResponse]  # type: ignore[assignment]
+    Resolve: _aio.UnaryUnaryMultiCallable[_orchestrator_pb2.ResolveRequest, _orchestrator_pb2.ResolveResponse]  # type: ignore[assignment]
 
 class OrchestratorServiceServicer(metaclass=_abc_1.ABCMeta):
     @_abc_1.abstractmethod
@@ -45,5 +47,12 @@ class OrchestratorServiceServicer(metaclass=_abc_1.ABCMeta):
         request: _orchestrator_pb2.EchoRequest,
         context: _ServicerContext,
     ) -> _typing.Union[_orchestrator_pb2.EchoResponse, _abc.Awaitable[_orchestrator_pb2.EchoResponse]]: ...
+
+    @_abc_1.abstractmethod
+    def Resolve(
+        self,
+        request: _orchestrator_pb2.ResolveRequest,
+        context: _ServicerContext,
+    ) -> _typing.Union[_orchestrator_pb2.ResolveResponse, _abc.Awaitable[_orchestrator_pb2.ResolveResponse]]: ...
 
 def add_OrchestratorServiceServicer_to_server(servicer: OrchestratorServiceServicer, server: _typing.Union[_grpc.Server, _aio.Server]) -> None: ...

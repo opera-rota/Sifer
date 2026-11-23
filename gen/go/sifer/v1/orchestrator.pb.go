@@ -109,17 +109,119 @@ func (x *EchoResponse) GetEnvelope() *Envelope {
 	return nil
 }
 
+type ResolveRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	DropContext   *DropContext           `protobuf:"bytes,1,opt,name=drop_context,json=dropContext,proto3" json:"drop_context,omitempty"`
+	Instruction   *Instruction           `protobuf:"bytes,2,opt,name=instruction,proto3" json:"instruction,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResolveRequest) Reset() {
+	*x = ResolveRequest{}
+	mi := &file_sifer_v1_orchestrator_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResolveRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResolveRequest) ProtoMessage() {}
+
+func (x *ResolveRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_sifer_v1_orchestrator_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResolveRequest.ProtoReflect.Descriptor instead.
+func (*ResolveRequest) Descriptor() ([]byte, []int) {
+	return file_sifer_v1_orchestrator_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *ResolveRequest) GetDropContext() *DropContext {
+	if x != nil {
+		return x.DropContext
+	}
+	return nil
+}
+
+func (x *ResolveRequest) GetInstruction() *Instruction {
+	if x != nil {
+		return x.Instruction
+	}
+	return nil
+}
+
+type ResolveResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	FixPlan       *FixPlan               `protobuf:"bytes,1,opt,name=fix_plan,json=fixPlan,proto3" json:"fix_plan,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResolveResponse) Reset() {
+	*x = ResolveResponse{}
+	mi := &file_sifer_v1_orchestrator_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResolveResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResolveResponse) ProtoMessage() {}
+
+func (x *ResolveResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_sifer_v1_orchestrator_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResolveResponse.ProtoReflect.Descriptor instead.
+func (*ResolveResponse) Descriptor() ([]byte, []int) {
+	return file_sifer_v1_orchestrator_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *ResolveResponse) GetFixPlan() *FixPlan {
+	if x != nil {
+		return x.FixPlan
+	}
+	return nil
+}
+
 var File_sifer_v1_orchestrator_proto protoreflect.FileDescriptor
 
 const file_sifer_v1_orchestrator_proto_rawDesc = "" +
 	"\n" +
-	"\x1bsifer/v1/orchestrator.proto\x12\bsifer.v1\x1a\x17sifer/v1/envelope.proto\"=\n" +
+	"\x1bsifer/v1/orchestrator.proto\x12\bsifer.v1\x1a\x17sifer/v1/envelope.proto\x1a\x1asifer/v1/interaction.proto\"=\n" +
 	"\vEchoRequest\x12.\n" +
 	"\benvelope\x18\x01 \x01(\v2\x12.sifer.v1.EnvelopeR\benvelope\">\n" +
 	"\fEchoResponse\x12.\n" +
-	"\benvelope\x18\x01 \x01(\v2\x12.sifer.v1.EnvelopeR\benvelope2L\n" +
+	"\benvelope\x18\x01 \x01(\v2\x12.sifer.v1.EnvelopeR\benvelope\"\x83\x01\n" +
+	"\x0eResolveRequest\x128\n" +
+	"\fdrop_context\x18\x01 \x01(\v2\x15.sifer.v1.DropContextR\vdropContext\x127\n" +
+	"\vinstruction\x18\x02 \x01(\v2\x15.sifer.v1.InstructionR\vinstruction\"?\n" +
+	"\x0fResolveResponse\x12,\n" +
+	"\bfix_plan\x18\x01 \x01(\v2\x11.sifer.v1.FixPlanR\afixPlan2\x8c\x01\n" +
 	"\x13OrchestratorService\x125\n" +
-	"\x04Echo\x12\x15.sifer.v1.EchoRequest\x1a\x16.sifer.v1.EchoResponseB\x99\x01\n" +
+	"\x04Echo\x12\x15.sifer.v1.EchoRequest\x1a\x16.sifer.v1.EchoResponse\x12>\n" +
+	"\aResolve\x12\x18.sifer.v1.ResolveRequest\x1a\x19.sifer.v1.ResolveResponseB\x99\x01\n" +
 	"\fcom.sifer.v1B\x11OrchestratorProtoP\x01Z5github.com/mentor-sator/Sifer/gen/go/sifer/v1;siferv1\xa2\x02\x03SXX\xaa\x02\bSifer.V1\xca\x02\bSifer\\V1\xe2\x02\x14Sifer\\V1\\GPBMetadata\xea\x02\tSifer::V1b\x06proto3"
 
 var (
@@ -134,22 +236,32 @@ func file_sifer_v1_orchestrator_proto_rawDescGZIP() []byte {
 	return file_sifer_v1_orchestrator_proto_rawDescData
 }
 
-var file_sifer_v1_orchestrator_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_sifer_v1_orchestrator_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_sifer_v1_orchestrator_proto_goTypes = []any{
-	(*EchoRequest)(nil),  // 0: sifer.v1.EchoRequest
-	(*EchoResponse)(nil), // 1: sifer.v1.EchoResponse
-	(*Envelope)(nil),     // 2: sifer.v1.Envelope
+	(*EchoRequest)(nil),     // 0: sifer.v1.EchoRequest
+	(*EchoResponse)(nil),    // 1: sifer.v1.EchoResponse
+	(*ResolveRequest)(nil),  // 2: sifer.v1.ResolveRequest
+	(*ResolveResponse)(nil), // 3: sifer.v1.ResolveResponse
+	(*Envelope)(nil),        // 4: sifer.v1.Envelope
+	(*DropContext)(nil),     // 5: sifer.v1.DropContext
+	(*Instruction)(nil),     // 6: sifer.v1.Instruction
+	(*FixPlan)(nil),         // 7: sifer.v1.FixPlan
 }
 var file_sifer_v1_orchestrator_proto_depIdxs = []int32{
-	2, // 0: sifer.v1.EchoRequest.envelope:type_name -> sifer.v1.Envelope
-	2, // 1: sifer.v1.EchoResponse.envelope:type_name -> sifer.v1.Envelope
-	0, // 2: sifer.v1.OrchestratorService.Echo:input_type -> sifer.v1.EchoRequest
-	1, // 3: sifer.v1.OrchestratorService.Echo:output_type -> sifer.v1.EchoResponse
-	3, // [3:4] is the sub-list for method output_type
-	2, // [2:3] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	4, // 0: sifer.v1.EchoRequest.envelope:type_name -> sifer.v1.Envelope
+	4, // 1: sifer.v1.EchoResponse.envelope:type_name -> sifer.v1.Envelope
+	5, // 2: sifer.v1.ResolveRequest.drop_context:type_name -> sifer.v1.DropContext
+	6, // 3: sifer.v1.ResolveRequest.instruction:type_name -> sifer.v1.Instruction
+	7, // 4: sifer.v1.ResolveResponse.fix_plan:type_name -> sifer.v1.FixPlan
+	0, // 5: sifer.v1.OrchestratorService.Echo:input_type -> sifer.v1.EchoRequest
+	2, // 6: sifer.v1.OrchestratorService.Resolve:input_type -> sifer.v1.ResolveRequest
+	1, // 7: sifer.v1.OrchestratorService.Echo:output_type -> sifer.v1.EchoResponse
+	3, // 8: sifer.v1.OrchestratorService.Resolve:output_type -> sifer.v1.ResolveResponse
+	7, // [7:9] is the sub-list for method output_type
+	5, // [5:7] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_sifer_v1_orchestrator_proto_init() }
@@ -158,13 +270,14 @@ func file_sifer_v1_orchestrator_proto_init() {
 		return
 	}
 	file_sifer_v1_envelope_proto_init()
+	file_sifer_v1_interaction_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_sifer_v1_orchestrator_proto_rawDesc), len(file_sifer_v1_orchestrator_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

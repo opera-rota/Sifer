@@ -2,20 +2,91 @@
 // @generated from file sifer/v1/interaction.proto (package sifer.v1, syntax proto3)
 /* eslint-disable */
 
-import type { GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
-import { fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
+import type { GenEnum, GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
+import { enumDesc, fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file sifer/v1/interaction.proto.
  */
 export const file_sifer_v1_interaction: GenFile = /*@__PURE__*/
-  fileDesc("ChpzaWZlci92MS9pbnRlcmFjdGlvbi5wcm90bxIIc2lmZXIudjEiDQoLRHJvcENvbnRleHQiDQoLSW5zdHJ1Y3Rpb24iCQoHRml4UGxhbiIMCgpBY3Rpb25QbGFuIg4KDEFjdGlvblJlc3VsdCIQCg5Db25maXJtUmVxdWVzdCISChBBdXRob3JpdHlSZXF1ZXN0IhAKDkNvbnN1bHRSZXF1ZXN0IhEKD0RpYWdub3N0aWNEZWx0YUKYAQoMY29tLnNpZmVyLnYxQhBJbnRlcmFjdGlvblByb3RvUAFaNWdpdGh1Yi5jb20vbWVudG9yLXNhdG9yL1NpZmVyL2dlbi9nby9zaWZlci92MTtzaWZlcnYxogIDU1hYqgIIU2lmZXIuVjHKAghTaWZlclxWMeICFFNpZmVyXFYxXEdQQk1ldGFkYXRh6gIJU2lmZXI6OlYxYgZwcm90bzM");
+  fileDesc("ChpzaWZlci92MS9pbnRlcmFjdGlvbi5wcm90bxIIc2lmZXIudjEiPQoGQm91bmRzEgkKAXgYASABKAUSCQoBeRgCIAEoBRINCgV3aWR0aBgDIAEoBRIOCgZoZWlnaHQYBCABKAUi2wEKC0Ryb3BDb250ZXh0EiQKBnJlYWRlchgBIAEoDjIULnNpZmVyLnYxLkRyb3BSZWFkZXISIgoFc2NvcGUYAiABKA4yEy5zaWZlci52MS5Ecm9wU2NvcGUSDwoHYXBwX2tleRgDIAEoCRIUCgxlbGVtZW50X3JvbGUYBCABKAkSDwoHY29udGVudBgFIAEoCRIgCgZib3VuZHMYBiABKAsyEC5zaWZlci52MS5Cb3VuZHMSEgoKY29uZmlkZW5jZRgHIAEoAhIUCgx3aW5kb3dfdGl0bGUYCCABKAkiGwoLSW5zdHJ1Y3Rpb24SDAoEdGV4dBgBIAEoCSJoCgdGaXhQbGFuEg8KB2ZpeF9rZXkYASABKAkSEwoLcmVwbGFjZW1lbnQYAiABKAkSFQoNZXhwZWN0X3ByZWZpeBgDIAEoCRIOCgZlbmdpbmUYBCABKAkSEAoIZmFsbGJhY2sYBSABKAgiDAoKQWN0aW9uUGxhbiIOCgxBY3Rpb25SZXN1bHQiEAoOQ29uZmlybVJlcXVlc3QiEgoQQXV0aG9yaXR5UmVxdWVzdCIQCg5Db25zdWx0UmVxdWVzdCIRCg9EaWFnbm9zdGljRGVsdGEqeQoKRHJvcFJlYWRlchIbChdEUk9QX1JFQURFUl9VTlNQRUNJRklFRBAAEhMKD0RST1BfUkVBREVSX0RPTRABEh0KGURST1BfUkVBREVSX0FDQ0VTU0lCSUxJVFkQAhIaChZEUk9QX1JFQURFUl9TQ1JFRU5TSE9UEAMqaAoJRHJvcFNjb3BlEhoKFkRST1BfU0NPUEVfVU5TUEVDSUZJRUQQABIUChBEUk9QX1NDT1BFX1BPSU5UEAESEwoPRFJPUF9TQ09QRV9QQUdFEAISFAoQRFJPUF9TQ09QRV9GT0NVUxADQpgBCgxjb20uc2lmZXIudjFCEEludGVyYWN0aW9uUHJvdG9QAVo1Z2l0aHViLmNvbS9tZW50b3Itc2F0b3IvU2lmZXIvZ2VuL2dvL3NpZmVyL3YxO3NpZmVydjGiAgNTWFiqAghTaWZlci5WMcoCCFNpZmVyXFYx4gIUU2lmZXJcVjFcR1BCTWV0YWRhdGHqAglTaWZlcjo6VjFiBnByb3RvMw");
+
+/**
+ * @generated from message sifer.v1.Bounds
+ */
+export type Bounds = Message<"sifer.v1.Bounds"> & {
+  /**
+   * @generated from field: int32 x = 1;
+   */
+  x: number;
+
+  /**
+   * @generated from field: int32 y = 2;
+   */
+  y: number;
+
+  /**
+   * @generated from field: int32 width = 3;
+   */
+  width: number;
+
+  /**
+   * @generated from field: int32 height = 4;
+   */
+  height: number;
+};
+
+/**
+ * Describes the message sifer.v1.Bounds.
+ * Use `create(BoundsSchema)` to create a new message.
+ */
+export const BoundsSchema: GenMessage<Bounds> = /*@__PURE__*/
+  messageDesc(file_sifer_v1_interaction, 0);
 
 /**
  * @generated from message sifer.v1.DropContext
  */
 export type DropContext = Message<"sifer.v1.DropContext"> & {
+  /**
+   * @generated from field: sifer.v1.DropReader reader = 1;
+   */
+  reader: DropReader;
+
+  /**
+   * @generated from field: sifer.v1.DropScope scope = 2;
+   */
+  scope: DropScope;
+
+  /**
+   * @generated from field: string app_key = 3;
+   */
+  appKey: string;
+
+  /**
+   * @generated from field: string element_role = 4;
+   */
+  elementRole: string;
+
+  /**
+   * @generated from field: string content = 5;
+   */
+  content: string;
+
+  /**
+   * @generated from field: sifer.v1.Bounds bounds = 6;
+   */
+  bounds?: Bounds | undefined;
+
+  /**
+   * @generated from field: float confidence = 7;
+   */
+  confidence: number;
+
+  /**
+   * @generated from field: string window_title = 8;
+   */
+  windowTitle: string;
 };
 
 /**
@@ -23,12 +94,16 @@ export type DropContext = Message<"sifer.v1.DropContext"> & {
  * Use `create(DropContextSchema)` to create a new message.
  */
 export const DropContextSchema: GenMessage<DropContext> = /*@__PURE__*/
-  messageDesc(file_sifer_v1_interaction, 0);
+  messageDesc(file_sifer_v1_interaction, 1);
 
 /**
  * @generated from message sifer.v1.Instruction
  */
 export type Instruction = Message<"sifer.v1.Instruction"> & {
+  /**
+   * @generated from field: string text = 1;
+   */
+  text: string;
 };
 
 /**
@@ -36,12 +111,36 @@ export type Instruction = Message<"sifer.v1.Instruction"> & {
  * Use `create(InstructionSchema)` to create a new message.
  */
 export const InstructionSchema: GenMessage<Instruction> = /*@__PURE__*/
-  messageDesc(file_sifer_v1_interaction, 1);
+  messageDesc(file_sifer_v1_interaction, 2);
 
 /**
  * @generated from message sifer.v1.FixPlan
  */
 export type FixPlan = Message<"sifer.v1.FixPlan"> & {
+  /**
+   * @generated from field: string fix_key = 1;
+   */
+  fixKey: string;
+
+  /**
+   * @generated from field: string replacement = 2;
+   */
+  replacement: string;
+
+  /**
+   * @generated from field: string expect_prefix = 3;
+   */
+  expectPrefix: string;
+
+  /**
+   * @generated from field: string engine = 4;
+   */
+  engine: string;
+
+  /**
+   * @generated from field: bool fallback = 5;
+   */
+  fallback: boolean;
 };
 
 /**
@@ -49,7 +148,7 @@ export type FixPlan = Message<"sifer.v1.FixPlan"> & {
  * Use `create(FixPlanSchema)` to create a new message.
  */
 export const FixPlanSchema: GenMessage<FixPlan> = /*@__PURE__*/
-  messageDesc(file_sifer_v1_interaction, 2);
+  messageDesc(file_sifer_v1_interaction, 3);
 
 /**
  * @generated from message sifer.v1.ActionPlan
@@ -62,7 +161,7 @@ export type ActionPlan = Message<"sifer.v1.ActionPlan"> & {
  * Use `create(ActionPlanSchema)` to create a new message.
  */
 export const ActionPlanSchema: GenMessage<ActionPlan> = /*@__PURE__*/
-  messageDesc(file_sifer_v1_interaction, 3);
+  messageDesc(file_sifer_v1_interaction, 4);
 
 /**
  * @generated from message sifer.v1.ActionResult
@@ -75,7 +174,7 @@ export type ActionResult = Message<"sifer.v1.ActionResult"> & {
  * Use `create(ActionResultSchema)` to create a new message.
  */
 export const ActionResultSchema: GenMessage<ActionResult> = /*@__PURE__*/
-  messageDesc(file_sifer_v1_interaction, 4);
+  messageDesc(file_sifer_v1_interaction, 5);
 
 /**
  * @generated from message sifer.v1.ConfirmRequest
@@ -88,7 +187,7 @@ export type ConfirmRequest = Message<"sifer.v1.ConfirmRequest"> & {
  * Use `create(ConfirmRequestSchema)` to create a new message.
  */
 export const ConfirmRequestSchema: GenMessage<ConfirmRequest> = /*@__PURE__*/
-  messageDesc(file_sifer_v1_interaction, 5);
+  messageDesc(file_sifer_v1_interaction, 6);
 
 /**
  * @generated from message sifer.v1.AuthorityRequest
@@ -101,7 +200,7 @@ export type AuthorityRequest = Message<"sifer.v1.AuthorityRequest"> & {
  * Use `create(AuthorityRequestSchema)` to create a new message.
  */
 export const AuthorityRequestSchema: GenMessage<AuthorityRequest> = /*@__PURE__*/
-  messageDesc(file_sifer_v1_interaction, 6);
+  messageDesc(file_sifer_v1_interaction, 7);
 
 /**
  * @generated from message sifer.v1.ConsultRequest
@@ -114,7 +213,7 @@ export type ConsultRequest = Message<"sifer.v1.ConsultRequest"> & {
  * Use `create(ConsultRequestSchema)` to create a new message.
  */
 export const ConsultRequestSchema: GenMessage<ConsultRequest> = /*@__PURE__*/
-  messageDesc(file_sifer_v1_interaction, 7);
+  messageDesc(file_sifer_v1_interaction, 8);
 
 /**
  * @generated from message sifer.v1.DiagnosticDelta
@@ -127,5 +226,67 @@ export type DiagnosticDelta = Message<"sifer.v1.DiagnosticDelta"> & {
  * Use `create(DiagnosticDeltaSchema)` to create a new message.
  */
 export const DiagnosticDeltaSchema: GenMessage<DiagnosticDelta> = /*@__PURE__*/
-  messageDesc(file_sifer_v1_interaction, 8);
+  messageDesc(file_sifer_v1_interaction, 9);
+
+/**
+ * @generated from enum sifer.v1.DropReader
+ */
+export enum DropReader {
+  /**
+   * @generated from enum value: DROP_READER_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: DROP_READER_DOM = 1;
+   */
+  DOM = 1,
+
+  /**
+   * @generated from enum value: DROP_READER_ACCESSIBILITY = 2;
+   */
+  ACCESSIBILITY = 2,
+
+  /**
+   * @generated from enum value: DROP_READER_SCREENSHOT = 3;
+   */
+  SCREENSHOT = 3,
+}
+
+/**
+ * Describes the enum sifer.v1.DropReader.
+ */
+export const DropReaderSchema: GenEnum<DropReader> = /*@__PURE__*/
+  enumDesc(file_sifer_v1_interaction, 0);
+
+/**
+ * @generated from enum sifer.v1.DropScope
+ */
+export enum DropScope {
+  /**
+   * @generated from enum value: DROP_SCOPE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: DROP_SCOPE_POINT = 1;
+   */
+  POINT = 1,
+
+  /**
+   * @generated from enum value: DROP_SCOPE_PAGE = 2;
+   */
+  PAGE = 2,
+
+  /**
+   * @generated from enum value: DROP_SCOPE_FOCUS = 3;
+   */
+  FOCUS = 3,
+}
+
+/**
+ * Describes the enum sifer.v1.DropScope.
+ */
+export const DropScopeSchema: GenEnum<DropScope> = /*@__PURE__*/
+  enumDesc(file_sifer_v1_interaction, 1);
 

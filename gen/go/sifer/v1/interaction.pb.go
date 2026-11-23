@@ -21,15 +21,195 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type DropReader int32
+
+const (
+	DropReader_DROP_READER_UNSPECIFIED   DropReader = 0
+	DropReader_DROP_READER_DOM           DropReader = 1
+	DropReader_DROP_READER_ACCESSIBILITY DropReader = 2
+	DropReader_DROP_READER_SCREENSHOT    DropReader = 3
+)
+
+// Enum value maps for DropReader.
+var (
+	DropReader_name = map[int32]string{
+		0: "DROP_READER_UNSPECIFIED",
+		1: "DROP_READER_DOM",
+		2: "DROP_READER_ACCESSIBILITY",
+		3: "DROP_READER_SCREENSHOT",
+	}
+	DropReader_value = map[string]int32{
+		"DROP_READER_UNSPECIFIED":   0,
+		"DROP_READER_DOM":           1,
+		"DROP_READER_ACCESSIBILITY": 2,
+		"DROP_READER_SCREENSHOT":    3,
+	}
+)
+
+func (x DropReader) Enum() *DropReader {
+	p := new(DropReader)
+	*p = x
+	return p
+}
+
+func (x DropReader) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (DropReader) Descriptor() protoreflect.EnumDescriptor {
+	return file_sifer_v1_interaction_proto_enumTypes[0].Descriptor()
+}
+
+func (DropReader) Type() protoreflect.EnumType {
+	return &file_sifer_v1_interaction_proto_enumTypes[0]
+}
+
+func (x DropReader) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use DropReader.Descriptor instead.
+func (DropReader) EnumDescriptor() ([]byte, []int) {
+	return file_sifer_v1_interaction_proto_rawDescGZIP(), []int{0}
+}
+
+type DropScope int32
+
+const (
+	DropScope_DROP_SCOPE_UNSPECIFIED DropScope = 0
+	DropScope_DROP_SCOPE_POINT       DropScope = 1
+	DropScope_DROP_SCOPE_PAGE        DropScope = 2
+	DropScope_DROP_SCOPE_FOCUS       DropScope = 3
+)
+
+// Enum value maps for DropScope.
+var (
+	DropScope_name = map[int32]string{
+		0: "DROP_SCOPE_UNSPECIFIED",
+		1: "DROP_SCOPE_POINT",
+		2: "DROP_SCOPE_PAGE",
+		3: "DROP_SCOPE_FOCUS",
+	}
+	DropScope_value = map[string]int32{
+		"DROP_SCOPE_UNSPECIFIED": 0,
+		"DROP_SCOPE_POINT":       1,
+		"DROP_SCOPE_PAGE":        2,
+		"DROP_SCOPE_FOCUS":       3,
+	}
+)
+
+func (x DropScope) Enum() *DropScope {
+	p := new(DropScope)
+	*p = x
+	return p
+}
+
+func (x DropScope) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (DropScope) Descriptor() protoreflect.EnumDescriptor {
+	return file_sifer_v1_interaction_proto_enumTypes[1].Descriptor()
+}
+
+func (DropScope) Type() protoreflect.EnumType {
+	return &file_sifer_v1_interaction_proto_enumTypes[1]
+}
+
+func (x DropScope) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use DropScope.Descriptor instead.
+func (DropScope) EnumDescriptor() ([]byte, []int) {
+	return file_sifer_v1_interaction_proto_rawDescGZIP(), []int{1}
+}
+
+type Bounds struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	X             int32                  `protobuf:"varint,1,opt,name=x,proto3" json:"x,omitempty"`
+	Y             int32                  `protobuf:"varint,2,opt,name=y,proto3" json:"y,omitempty"`
+	Width         int32                  `protobuf:"varint,3,opt,name=width,proto3" json:"width,omitempty"`
+	Height        int32                  `protobuf:"varint,4,opt,name=height,proto3" json:"height,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Bounds) Reset() {
+	*x = Bounds{}
+	mi := &file_sifer_v1_interaction_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Bounds) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Bounds) ProtoMessage() {}
+
+func (x *Bounds) ProtoReflect() protoreflect.Message {
+	mi := &file_sifer_v1_interaction_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Bounds.ProtoReflect.Descriptor instead.
+func (*Bounds) Descriptor() ([]byte, []int) {
+	return file_sifer_v1_interaction_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *Bounds) GetX() int32 {
+	if x != nil {
+		return x.X
+	}
+	return 0
+}
+
+func (x *Bounds) GetY() int32 {
+	if x != nil {
+		return x.Y
+	}
+	return 0
+}
+
+func (x *Bounds) GetWidth() int32 {
+	if x != nil {
+		return x.Width
+	}
+	return 0
+}
+
+func (x *Bounds) GetHeight() int32 {
+	if x != nil {
+		return x.Height
+	}
+	return 0
+}
+
 type DropContext struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
+	Reader        DropReader             `protobuf:"varint,1,opt,name=reader,proto3,enum=sifer.v1.DropReader" json:"reader,omitempty"`
+	Scope         DropScope              `protobuf:"varint,2,opt,name=scope,proto3,enum=sifer.v1.DropScope" json:"scope,omitempty"`
+	AppKey        string                 `protobuf:"bytes,3,opt,name=app_key,json=appKey,proto3" json:"app_key,omitempty"`
+	ElementRole   string                 `protobuf:"bytes,4,opt,name=element_role,json=elementRole,proto3" json:"element_role,omitempty"`
+	Content       string                 `protobuf:"bytes,5,opt,name=content,proto3" json:"content,omitempty"`
+	Bounds        *Bounds                `protobuf:"bytes,6,opt,name=bounds,proto3" json:"bounds,omitempty"`
+	Confidence    float32                `protobuf:"fixed32,7,opt,name=confidence,proto3" json:"confidence,omitempty"`
+	WindowTitle   string                 `protobuf:"bytes,8,opt,name=window_title,json=windowTitle,proto3" json:"window_title,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *DropContext) Reset() {
 	*x = DropContext{}
-	mi := &file_sifer_v1_interaction_proto_msgTypes[0]
+	mi := &file_sifer_v1_interaction_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -41,7 +221,7 @@ func (x *DropContext) String() string {
 func (*DropContext) ProtoMessage() {}
 
 func (x *DropContext) ProtoReflect() protoreflect.Message {
-	mi := &file_sifer_v1_interaction_proto_msgTypes[0]
+	mi := &file_sifer_v1_interaction_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -54,18 +234,75 @@ func (x *DropContext) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DropContext.ProtoReflect.Descriptor instead.
 func (*DropContext) Descriptor() ([]byte, []int) {
-	return file_sifer_v1_interaction_proto_rawDescGZIP(), []int{0}
+	return file_sifer_v1_interaction_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *DropContext) GetReader() DropReader {
+	if x != nil {
+		return x.Reader
+	}
+	return DropReader_DROP_READER_UNSPECIFIED
+}
+
+func (x *DropContext) GetScope() DropScope {
+	if x != nil {
+		return x.Scope
+	}
+	return DropScope_DROP_SCOPE_UNSPECIFIED
+}
+
+func (x *DropContext) GetAppKey() string {
+	if x != nil {
+		return x.AppKey
+	}
+	return ""
+}
+
+func (x *DropContext) GetElementRole() string {
+	if x != nil {
+		return x.ElementRole
+	}
+	return ""
+}
+
+func (x *DropContext) GetContent() string {
+	if x != nil {
+		return x.Content
+	}
+	return ""
+}
+
+func (x *DropContext) GetBounds() *Bounds {
+	if x != nil {
+		return x.Bounds
+	}
+	return nil
+}
+
+func (x *DropContext) GetConfidence() float32 {
+	if x != nil {
+		return x.Confidence
+	}
+	return 0
+}
+
+func (x *DropContext) GetWindowTitle() string {
+	if x != nil {
+		return x.WindowTitle
+	}
+	return ""
 }
 
 type Instruction struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
+	Text          string                 `protobuf:"bytes,1,opt,name=text,proto3" json:"text,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Instruction) Reset() {
 	*x = Instruction{}
-	mi := &file_sifer_v1_interaction_proto_msgTypes[1]
+	mi := &file_sifer_v1_interaction_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -77,7 +314,7 @@ func (x *Instruction) String() string {
 func (*Instruction) ProtoMessage() {}
 
 func (x *Instruction) ProtoReflect() protoreflect.Message {
-	mi := &file_sifer_v1_interaction_proto_msgTypes[1]
+	mi := &file_sifer_v1_interaction_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -90,18 +327,30 @@ func (x *Instruction) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Instruction.ProtoReflect.Descriptor instead.
 func (*Instruction) Descriptor() ([]byte, []int) {
-	return file_sifer_v1_interaction_proto_rawDescGZIP(), []int{1}
+	return file_sifer_v1_interaction_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *Instruction) GetText() string {
+	if x != nil {
+		return x.Text
+	}
+	return ""
 }
 
 type FixPlan struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
+	FixKey        string                 `protobuf:"bytes,1,opt,name=fix_key,json=fixKey,proto3" json:"fix_key,omitempty"`
+	Replacement   string                 `protobuf:"bytes,2,opt,name=replacement,proto3" json:"replacement,omitempty"`
+	ExpectPrefix  string                 `protobuf:"bytes,3,opt,name=expect_prefix,json=expectPrefix,proto3" json:"expect_prefix,omitempty"`
+	Engine        string                 `protobuf:"bytes,4,opt,name=engine,proto3" json:"engine,omitempty"`
+	Fallback      bool                   `protobuf:"varint,5,opt,name=fallback,proto3" json:"fallback,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *FixPlan) Reset() {
 	*x = FixPlan{}
-	mi := &file_sifer_v1_interaction_proto_msgTypes[2]
+	mi := &file_sifer_v1_interaction_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -113,7 +362,7 @@ func (x *FixPlan) String() string {
 func (*FixPlan) ProtoMessage() {}
 
 func (x *FixPlan) ProtoReflect() protoreflect.Message {
-	mi := &file_sifer_v1_interaction_proto_msgTypes[2]
+	mi := &file_sifer_v1_interaction_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -126,7 +375,42 @@ func (x *FixPlan) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FixPlan.ProtoReflect.Descriptor instead.
 func (*FixPlan) Descriptor() ([]byte, []int) {
-	return file_sifer_v1_interaction_proto_rawDescGZIP(), []int{2}
+	return file_sifer_v1_interaction_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *FixPlan) GetFixKey() string {
+	if x != nil {
+		return x.FixKey
+	}
+	return ""
+}
+
+func (x *FixPlan) GetReplacement() string {
+	if x != nil {
+		return x.Replacement
+	}
+	return ""
+}
+
+func (x *FixPlan) GetExpectPrefix() string {
+	if x != nil {
+		return x.ExpectPrefix
+	}
+	return ""
+}
+
+func (x *FixPlan) GetEngine() string {
+	if x != nil {
+		return x.Engine
+	}
+	return ""
+}
+
+func (x *FixPlan) GetFallback() bool {
+	if x != nil {
+		return x.Fallback
+	}
+	return false
 }
 
 type ActionPlan struct {
@@ -137,7 +421,7 @@ type ActionPlan struct {
 
 func (x *ActionPlan) Reset() {
 	*x = ActionPlan{}
-	mi := &file_sifer_v1_interaction_proto_msgTypes[3]
+	mi := &file_sifer_v1_interaction_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -149,7 +433,7 @@ func (x *ActionPlan) String() string {
 func (*ActionPlan) ProtoMessage() {}
 
 func (x *ActionPlan) ProtoReflect() protoreflect.Message {
-	mi := &file_sifer_v1_interaction_proto_msgTypes[3]
+	mi := &file_sifer_v1_interaction_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -162,7 +446,7 @@ func (x *ActionPlan) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActionPlan.ProtoReflect.Descriptor instead.
 func (*ActionPlan) Descriptor() ([]byte, []int) {
-	return file_sifer_v1_interaction_proto_rawDescGZIP(), []int{3}
+	return file_sifer_v1_interaction_proto_rawDescGZIP(), []int{4}
 }
 
 type ActionResult struct {
@@ -173,7 +457,7 @@ type ActionResult struct {
 
 func (x *ActionResult) Reset() {
 	*x = ActionResult{}
-	mi := &file_sifer_v1_interaction_proto_msgTypes[4]
+	mi := &file_sifer_v1_interaction_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -185,7 +469,7 @@ func (x *ActionResult) String() string {
 func (*ActionResult) ProtoMessage() {}
 
 func (x *ActionResult) ProtoReflect() protoreflect.Message {
-	mi := &file_sifer_v1_interaction_proto_msgTypes[4]
+	mi := &file_sifer_v1_interaction_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -198,7 +482,7 @@ func (x *ActionResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActionResult.ProtoReflect.Descriptor instead.
 func (*ActionResult) Descriptor() ([]byte, []int) {
-	return file_sifer_v1_interaction_proto_rawDescGZIP(), []int{4}
+	return file_sifer_v1_interaction_proto_rawDescGZIP(), []int{5}
 }
 
 type ConfirmRequest struct {
@@ -209,7 +493,7 @@ type ConfirmRequest struct {
 
 func (x *ConfirmRequest) Reset() {
 	*x = ConfirmRequest{}
-	mi := &file_sifer_v1_interaction_proto_msgTypes[5]
+	mi := &file_sifer_v1_interaction_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -221,7 +505,7 @@ func (x *ConfirmRequest) String() string {
 func (*ConfirmRequest) ProtoMessage() {}
 
 func (x *ConfirmRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_sifer_v1_interaction_proto_msgTypes[5]
+	mi := &file_sifer_v1_interaction_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -234,7 +518,7 @@ func (x *ConfirmRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ConfirmRequest.ProtoReflect.Descriptor instead.
 func (*ConfirmRequest) Descriptor() ([]byte, []int) {
-	return file_sifer_v1_interaction_proto_rawDescGZIP(), []int{5}
+	return file_sifer_v1_interaction_proto_rawDescGZIP(), []int{6}
 }
 
 type AuthorityRequest struct {
@@ -245,7 +529,7 @@ type AuthorityRequest struct {
 
 func (x *AuthorityRequest) Reset() {
 	*x = AuthorityRequest{}
-	mi := &file_sifer_v1_interaction_proto_msgTypes[6]
+	mi := &file_sifer_v1_interaction_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -257,7 +541,7 @@ func (x *AuthorityRequest) String() string {
 func (*AuthorityRequest) ProtoMessage() {}
 
 func (x *AuthorityRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_sifer_v1_interaction_proto_msgTypes[6]
+	mi := &file_sifer_v1_interaction_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -270,7 +554,7 @@ func (x *AuthorityRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AuthorityRequest.ProtoReflect.Descriptor instead.
 func (*AuthorityRequest) Descriptor() ([]byte, []int) {
-	return file_sifer_v1_interaction_proto_rawDescGZIP(), []int{6}
+	return file_sifer_v1_interaction_proto_rawDescGZIP(), []int{7}
 }
 
 type ConsultRequest struct {
@@ -281,7 +565,7 @@ type ConsultRequest struct {
 
 func (x *ConsultRequest) Reset() {
 	*x = ConsultRequest{}
-	mi := &file_sifer_v1_interaction_proto_msgTypes[7]
+	mi := &file_sifer_v1_interaction_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -293,7 +577,7 @@ func (x *ConsultRequest) String() string {
 func (*ConsultRequest) ProtoMessage() {}
 
 func (x *ConsultRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_sifer_v1_interaction_proto_msgTypes[7]
+	mi := &file_sifer_v1_interaction_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -306,7 +590,7 @@ func (x *ConsultRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ConsultRequest.ProtoReflect.Descriptor instead.
 func (*ConsultRequest) Descriptor() ([]byte, []int) {
-	return file_sifer_v1_interaction_proto_rawDescGZIP(), []int{7}
+	return file_sifer_v1_interaction_proto_rawDescGZIP(), []int{8}
 }
 
 type DiagnosticDelta struct {
@@ -317,7 +601,7 @@ type DiagnosticDelta struct {
 
 func (x *DiagnosticDelta) Reset() {
 	*x = DiagnosticDelta{}
-	mi := &file_sifer_v1_interaction_proto_msgTypes[8]
+	mi := &file_sifer_v1_interaction_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -329,7 +613,7 @@ func (x *DiagnosticDelta) String() string {
 func (*DiagnosticDelta) ProtoMessage() {}
 
 func (x *DiagnosticDelta) ProtoReflect() protoreflect.Message {
-	mi := &file_sifer_v1_interaction_proto_msgTypes[8]
+	mi := &file_sifer_v1_interaction_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -342,24 +626,56 @@ func (x *DiagnosticDelta) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DiagnosticDelta.ProtoReflect.Descriptor instead.
 func (*DiagnosticDelta) Descriptor() ([]byte, []int) {
-	return file_sifer_v1_interaction_proto_rawDescGZIP(), []int{8}
+	return file_sifer_v1_interaction_proto_rawDescGZIP(), []int{9}
 }
 
 var File_sifer_v1_interaction_proto protoreflect.FileDescriptor
 
 const file_sifer_v1_interaction_proto_rawDesc = "" +
 	"\n" +
-	"\x1asifer/v1/interaction.proto\x12\bsifer.v1\"\r\n" +
-	"\vDropContext\"\r\n" +
-	"\vInstruction\"\t\n" +
-	"\aFixPlan\"\f\n" +
+	"\x1asifer/v1/interaction.proto\x12\bsifer.v1\"R\n" +
+	"\x06Bounds\x12\f\n" +
+	"\x01x\x18\x01 \x01(\x05R\x01x\x12\f\n" +
+	"\x01y\x18\x02 \x01(\x05R\x01y\x12\x14\n" +
+	"\x05width\x18\x03 \x01(\x05R\x05width\x12\x16\n" +
+	"\x06height\x18\x04 \x01(\x05R\x06height\"\xa9\x02\n" +
+	"\vDropContext\x12,\n" +
+	"\x06reader\x18\x01 \x01(\x0e2\x14.sifer.v1.DropReaderR\x06reader\x12)\n" +
+	"\x05scope\x18\x02 \x01(\x0e2\x13.sifer.v1.DropScopeR\x05scope\x12\x17\n" +
+	"\aapp_key\x18\x03 \x01(\tR\x06appKey\x12!\n" +
+	"\felement_role\x18\x04 \x01(\tR\velementRole\x12\x18\n" +
+	"\acontent\x18\x05 \x01(\tR\acontent\x12(\n" +
+	"\x06bounds\x18\x06 \x01(\v2\x10.sifer.v1.BoundsR\x06bounds\x12\x1e\n" +
+	"\n" +
+	"confidence\x18\a \x01(\x02R\n" +
+	"confidence\x12!\n" +
+	"\fwindow_title\x18\b \x01(\tR\vwindowTitle\"!\n" +
+	"\vInstruction\x12\x12\n" +
+	"\x04text\x18\x01 \x01(\tR\x04text\"\x9d\x01\n" +
+	"\aFixPlan\x12\x17\n" +
+	"\afix_key\x18\x01 \x01(\tR\x06fixKey\x12 \n" +
+	"\vreplacement\x18\x02 \x01(\tR\vreplacement\x12#\n" +
+	"\rexpect_prefix\x18\x03 \x01(\tR\fexpectPrefix\x12\x16\n" +
+	"\x06engine\x18\x04 \x01(\tR\x06engine\x12\x1a\n" +
+	"\bfallback\x18\x05 \x01(\bR\bfallback\"\f\n" +
 	"\n" +
 	"ActionPlan\"\x0e\n" +
 	"\fActionResult\"\x10\n" +
 	"\x0eConfirmRequest\"\x12\n" +
 	"\x10AuthorityRequest\"\x10\n" +
 	"\x0eConsultRequest\"\x11\n" +
-	"\x0fDiagnosticDeltaB\x98\x01\n" +
+	"\x0fDiagnosticDelta*y\n" +
+	"\n" +
+	"DropReader\x12\x1b\n" +
+	"\x17DROP_READER_UNSPECIFIED\x10\x00\x12\x13\n" +
+	"\x0fDROP_READER_DOM\x10\x01\x12\x1d\n" +
+	"\x19DROP_READER_ACCESSIBILITY\x10\x02\x12\x1a\n" +
+	"\x16DROP_READER_SCREENSHOT\x10\x03*h\n" +
+	"\tDropScope\x12\x1a\n" +
+	"\x16DROP_SCOPE_UNSPECIFIED\x10\x00\x12\x14\n" +
+	"\x10DROP_SCOPE_POINT\x10\x01\x12\x13\n" +
+	"\x0fDROP_SCOPE_PAGE\x10\x02\x12\x14\n" +
+	"\x10DROP_SCOPE_FOCUS\x10\x03B\x98\x01\n" +
 	"\fcom.sifer.v1B\x10InteractionProtoP\x01Z5github.com/mentor-sator/Sifer/gen/go/sifer/v1;siferv1\xa2\x02\x03SXX\xaa\x02\bSifer.V1\xca\x02\bSifer\\V1\xe2\x02\x14Sifer\\V1\\GPBMetadata\xea\x02\tSifer::V1b\x06proto3"
 
 var (
@@ -374,24 +690,31 @@ func file_sifer_v1_interaction_proto_rawDescGZIP() []byte {
 	return file_sifer_v1_interaction_proto_rawDescData
 }
 
-var file_sifer_v1_interaction_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_sifer_v1_interaction_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_sifer_v1_interaction_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_sifer_v1_interaction_proto_goTypes = []any{
-	(*DropContext)(nil),      // 0: sifer.v1.DropContext
-	(*Instruction)(nil),      // 1: sifer.v1.Instruction
-	(*FixPlan)(nil),          // 2: sifer.v1.FixPlan
-	(*ActionPlan)(nil),       // 3: sifer.v1.ActionPlan
-	(*ActionResult)(nil),     // 4: sifer.v1.ActionResult
-	(*ConfirmRequest)(nil),   // 5: sifer.v1.ConfirmRequest
-	(*AuthorityRequest)(nil), // 6: sifer.v1.AuthorityRequest
-	(*ConsultRequest)(nil),   // 7: sifer.v1.ConsultRequest
-	(*DiagnosticDelta)(nil),  // 8: sifer.v1.DiagnosticDelta
+	(DropReader)(0),          // 0: sifer.v1.DropReader
+	(DropScope)(0),           // 1: sifer.v1.DropScope
+	(*Bounds)(nil),           // 2: sifer.v1.Bounds
+	(*DropContext)(nil),      // 3: sifer.v1.DropContext
+	(*Instruction)(nil),      // 4: sifer.v1.Instruction
+	(*FixPlan)(nil),          // 5: sifer.v1.FixPlan
+	(*ActionPlan)(nil),       // 6: sifer.v1.ActionPlan
+	(*ActionResult)(nil),     // 7: sifer.v1.ActionResult
+	(*ConfirmRequest)(nil),   // 8: sifer.v1.ConfirmRequest
+	(*AuthorityRequest)(nil), // 9: sifer.v1.AuthorityRequest
+	(*ConsultRequest)(nil),   // 10: sifer.v1.ConsultRequest
+	(*DiagnosticDelta)(nil),  // 11: sifer.v1.DiagnosticDelta
 }
 var file_sifer_v1_interaction_proto_depIdxs = []int32{
-	0, // [0:0] is the sub-list for method output_type
-	0, // [0:0] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	0, // 0: sifer.v1.DropContext.reader:type_name -> sifer.v1.DropReader
+	1, // 1: sifer.v1.DropContext.scope:type_name -> sifer.v1.DropScope
+	2, // 2: sifer.v1.DropContext.bounds:type_name -> sifer.v1.Bounds
+	3, // [3:3] is the sub-list for method output_type
+	3, // [3:3] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_sifer_v1_interaction_proto_init() }
@@ -404,13 +727,14 @@ func file_sifer_v1_interaction_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_sifer_v1_interaction_proto_rawDesc), len(file_sifer_v1_interaction_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   9,
+			NumEnums:      2,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_sifer_v1_interaction_proto_goTypes,
 		DependencyIndexes: file_sifer_v1_interaction_proto_depIdxs,
+		EnumInfos:         file_sifer_v1_interaction_proto_enumTypes,
 		MessageInfos:      file_sifer_v1_interaction_proto_msgTypes,
 	}.Build()
 	File_sifer_v1_interaction_proto = out.File

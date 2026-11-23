@@ -18,6 +18,7 @@ import (
 )
 
 type fakeOrchestrator struct {
+	siferv1.OrchestratorServiceClient
 	err   error
 	calls int
 }

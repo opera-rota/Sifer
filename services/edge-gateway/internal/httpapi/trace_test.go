@@ -27,6 +27,7 @@ func TestMain(m *testing.M) {
 }
 
 type tracingOrchestrator struct {
+	siferv1.OrchestratorServiceClient
 	seen trace.SpanContext
 }
 

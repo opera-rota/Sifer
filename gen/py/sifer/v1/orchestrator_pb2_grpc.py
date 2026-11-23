@@ -19,12 +19,23 @@ class OrchestratorServiceStub:
                 request_serializer=sifer_dot_v1_dot_orchestrator__pb2.EchoRequest.SerializeToString,
                 response_deserializer=sifer_dot_v1_dot_orchestrator__pb2.EchoResponse.FromString,
                 _registered_method=True)
+        self.Resolve = channel.unary_unary(
+                '/sifer.v1.OrchestratorService/Resolve',
+                request_serializer=sifer_dot_v1_dot_orchestrator__pb2.ResolveRequest.SerializeToString,
+                response_deserializer=sifer_dot_v1_dot_orchestrator__pb2.ResolveResponse.FromString,
+                _registered_method=True)
 
 
 class OrchestratorServiceServicer:
     """Missing associated documentation comment in .proto file."""
 
     def Echo(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def Resolve(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -37,6 +48,11 @@ def add_OrchestratorServiceServicer_to_server(servicer, server):
                     servicer.Echo,
                     request_deserializer=sifer_dot_v1_dot_orchestrator__pb2.EchoRequest.FromString,
                     response_serializer=sifer_dot_v1_dot_orchestrator__pb2.EchoResponse.SerializeToString,
+            ),
+            'Resolve': grpc.unary_unary_rpc_method_handler(
+                    servicer.Resolve,
+                    request_deserializer=sifer_dot_v1_dot_orchestrator__pb2.ResolveRequest.FromString,
+                    response_serializer=sifer_dot_v1_dot_orchestrator__pb2.ResolveResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -66,6 +82,33 @@ class OrchestratorService:
             '/sifer.v1.OrchestratorService/Echo',
             sifer_dot_v1_dot_orchestrator__pb2.EchoRequest.SerializeToString,
             sifer_dot_v1_dot_orchestrator__pb2.EchoResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def Resolve(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/sifer.v1.OrchestratorService/Resolve',
+            sifer_dot_v1_dot_orchestrator__pb2.ResolveRequest.SerializeToString,
+            sifer_dot_v1_dot_orchestrator__pb2.ResolveResponse.FromString,
             options,
             channel_credentials,
             insecure,

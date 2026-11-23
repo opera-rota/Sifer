@@ -10,7 +10,7 @@ TLS = ("SIFER_TLS_CA", "SIFER_TLS_CERT", "SIFER_TLS_KEY")
 
 @pytest.fixture(autouse=True)
 def clean_env(monkeypatch: pytest.MonkeyPatch) -> None:
-    for name in ADDRESSES + TLS:
+    for name in (*ADDRESSES, *TLS, "SIFER_ENGINES_FILE"):
         monkeypatch.delenv(name, raising=False)
 
 
@@ -19,6 +19,7 @@ def test_defaults_to_loopback_without_tls() -> None:
     assert config.addr == DEFAULT_ADDR
     assert config.otlp_endpoint == DEFAULT_OTLP_ENDPOINT
     assert config.tls is None
+    assert config.engines_file is None
     assert config.port == 8083
 
 
@@ -47,3 +48,8 @@ def test_rejects_partial_tls(monkeypatch: pytest.MonkeyPatch, name: str) -> None
     monkeypatch.setenv(name, "only-this-one")
     with pytest.raises(ValueError, match="must be set together"):
         Config.from_env()
+
+
+def test_reads_the_engines_file(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("SIFER_ENGINES_FILE", "infra/local/engines.json")
+    assert Config.from_env().engines_file == Path("infra/local/engines.json")

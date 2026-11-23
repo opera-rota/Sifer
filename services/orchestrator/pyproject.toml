@@ -3,6 +3,7 @@ name = "sifer-orchestrator"
 version = "0.0.0"
 requires-python = "==3.12.14"
 dependencies = [
+  "httpx==0.28.1",
   "opentelemetry-api==1.44.0",
   "opentelemetry-exporter-otlp-proto-grpc==1.44.0",
   "opentelemetry-instrumentation-grpc==0.65b0",
@@ -13,6 +14,7 @@ dependencies = [
 [project.scripts]
 sifer-orchestrator = "sifer_orchestrator.__main__:main"
 sifer-orchestrator-healthcheck = "sifer_orchestrator.healthcheck:main"
+sifer-resolve = "sifer_orchestrator.try_resolve:main"
 
 [tool.uv.sources]
 sifer-contracts = { workspace = true }

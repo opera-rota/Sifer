@@ -6,13 +6,15 @@ import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegen
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
 import type { Envelope } from "./envelope_pb.js";
 import { file_sifer_v1_envelope } from "./envelope_pb.js";
+import type { DropContext, FixPlan, Instruction } from "./interaction_pb.js";
+import { file_sifer_v1_interaction } from "./interaction_pb.js";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file sifer/v1/orchestrator.proto.
  */
 export const file_sifer_v1_orchestrator: GenFile = /*@__PURE__*/
-  fileDesc("ChtzaWZlci92MS9vcmNoZXN0cmF0b3IucHJvdG8SCHNpZmVyLnYxIjMKC0VjaG9SZXF1ZXN0EiQKCGVudmVsb3BlGAEgASgLMhIuc2lmZXIudjEuRW52ZWxvcGUiNAoMRWNob1Jlc3BvbnNlEiQKCGVudmVsb3BlGAEgASgLMhIuc2lmZXIudjEuRW52ZWxvcGUyTAoTT3JjaGVzdHJhdG9yU2VydmljZRI1CgRFY2hvEhUuc2lmZXIudjEuRWNob1JlcXVlc3QaFi5zaWZlci52MS5FY2hvUmVzcG9uc2VCmQEKDGNvbS5zaWZlci52MUIRT3JjaGVzdHJhdG9yUHJvdG9QAVo1Z2l0aHViLmNvbS9tZW50b3Itc2F0b3IvU2lmZXIvZ2VuL2dvL3NpZmVyL3YxO3NpZmVydjGiAgNTWFiqAghTaWZlci5WMcoCCFNpZmVyXFYx4gIUU2lmZXJcVjFcR1BCTWV0YWRhdGHqAglTaWZlcjo6VjFiBnByb3RvMw", [file_sifer_v1_envelope]);
+  fileDesc("ChtzaWZlci92MS9vcmNoZXN0cmF0b3IucHJvdG8SCHNpZmVyLnYxIjMKC0VjaG9SZXF1ZXN0EiQKCGVudmVsb3BlGAEgASgLMhIuc2lmZXIudjEuRW52ZWxvcGUiNAoMRWNob1Jlc3BvbnNlEiQKCGVudmVsb3BlGAEgASgLMhIuc2lmZXIudjEuRW52ZWxvcGUiaQoOUmVzb2x2ZVJlcXVlc3QSKwoMZHJvcF9jb250ZXh0GAEgASgLMhUuc2lmZXIudjEuRHJvcENvbnRleHQSKgoLaW5zdHJ1Y3Rpb24YAiABKAsyFS5zaWZlci52MS5JbnN0cnVjdGlvbiI2Cg9SZXNvbHZlUmVzcG9uc2USIwoIZml4X3BsYW4YASABKAsyES5zaWZlci52MS5GaXhQbGFuMowBChNPcmNoZXN0cmF0b3JTZXJ2aWNlEjUKBEVjaG8SFS5zaWZlci52MS5FY2hvUmVxdWVzdBoWLnNpZmVyLnYxLkVjaG9SZXNwb25zZRI+CgdSZXNvbHZlEhguc2lmZXIudjEuUmVzb2x2ZVJlcXVlc3QaGS5zaWZlci52MS5SZXNvbHZlUmVzcG9uc2VCmQEKDGNvbS5zaWZlci52MUIRT3JjaGVzdHJhdG9yUHJvdG9QAVo1Z2l0aHViLmNvbS9tZW50b3Itc2F0b3IvU2lmZXIvZ2VuL2dvL3NpZmVyL3YxO3NpZmVydjGiAgNTWFiqAghTaWZlci5WMcoCCFNpZmVyXFYx4gIUU2lmZXJcVjFcR1BCTWV0YWRhdGHqAglTaWZlcjo6VjFiBnByb3RvMw", [file_sifer_v1_envelope, file_sifer_v1_interaction]);
 
 /**
  * @generated from message sifer.v1.EchoRequest
@@ -49,6 +51,45 @@ export const EchoResponseSchema: GenMessage<EchoResponse> = /*@__PURE__*/
   messageDesc(file_sifer_v1_orchestrator, 1);
 
 /**
+ * @generated from message sifer.v1.ResolveRequest
+ */
+export type ResolveRequest = Message<"sifer.v1.ResolveRequest"> & {
+  /**
+   * @generated from field: sifer.v1.DropContext drop_context = 1;
+   */
+  dropContext?: DropContext | undefined;
+
+  /**
+   * @generated from field: sifer.v1.Instruction instruction = 2;
+   */
+  instruction?: Instruction | undefined;
+};
+
+/**
+ * Describes the message sifer.v1.ResolveRequest.
+ * Use `create(ResolveRequestSchema)` to create a new message.
+ */
+export const ResolveRequestSchema: GenMessage<ResolveRequest> = /*@__PURE__*/
+  messageDesc(file_sifer_v1_orchestrator, 2);
+
+/**
+ * @generated from message sifer.v1.ResolveResponse
+ */
+export type ResolveResponse = Message<"sifer.v1.ResolveResponse"> & {
+  /**
+   * @generated from field: sifer.v1.FixPlan fix_plan = 1;
+   */
+  fixPlan?: FixPlan | undefined;
+};
+
+/**
+ * Describes the message sifer.v1.ResolveResponse.
+ * Use `create(ResolveResponseSchema)` to create a new message.
+ */
+export const ResolveResponseSchema: GenMessage<ResolveResponse> = /*@__PURE__*/
+  messageDesc(file_sifer_v1_orchestrator, 3);
+
+/**
  * @generated from service sifer.v1.OrchestratorService
  */
 export const OrchestratorService: GenService<{
@@ -59,6 +100,14 @@ export const OrchestratorService: GenService<{
     methodKind: "unary";
     input: typeof EchoRequestSchema;
     output: typeof EchoResponseSchema;
+  },
+  /**
+   * @generated from rpc sifer.v1.OrchestratorService.Resolve
+   */
+  resolve: {
+    methodKind: "unary";
+    input: typeof ResolveRequestSchema;
+    output: typeof ResolveResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_sifer_v1_orchestrator, 0);

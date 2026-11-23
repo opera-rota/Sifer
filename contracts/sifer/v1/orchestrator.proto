@@ -3,9 +3,11 @@ syntax = "proto3";
 package sifer.v1;
 
 import "sifer/v1/envelope.proto";
+import "sifer/v1/interaction.proto";
 
 service OrchestratorService {
   rpc Echo(EchoRequest) returns (EchoResponse);
+  rpc Resolve(ResolveRequest) returns (ResolveResponse);
 }
 
 message EchoRequest {
@@ -14,4 +16,13 @@ message EchoRequest {
 
 message EchoResponse {
   Envelope envelope = 1;
+}
+
+message ResolveRequest {
+  DropContext drop_context = 1;
+  Instruction instruction = 2;
+}
+
+message ResolveResponse {
+  FixPlan fix_plan = 1;
 }

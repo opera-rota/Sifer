@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1asifer/v1/interaction.proto\x12\x08sifer.v1\"\r\n\x0b\x44ropContext\"\r\n\x0bInstruction\"\t\n\x07\x46ixPlan\"\x0c\n\nActionPlan\"\x0e\n\x0c\x41\x63tionResult\"\x10\n\x0e\x43onfirmRequest\"\x12\n\x10\x41uthorityRequest\"\x10\n\x0e\x43onsultRequest\"\x11\n\x0f\x44iagnosticDeltaB\x98\x01\n\x0c\x63om.sifer.v1B\x10InteractionProtoP\x01Z5github.com/mentor-sator/Sifer/gen/go/sifer/v1;siferv1\xa2\x02\x03SXX\xaa\x02\x08Sifer.V1\xca\x02\x08Sifer\\V1\xe2\x02\x14Sifer\\V1\\GPBMetadata\xea\x02\tSifer::V1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1asifer/v1/interaction.proto\x12\x08sifer.v1\"R\n\x06\x42ounds\x12\x0c\n\x01x\x18\x01 \x01(\x05R\x01x\x12\x0c\n\x01y\x18\x02 \x01(\x05R\x01y\x12\x14\n\x05width\x18\x03 \x01(\x05R\x05width\x12\x16\n\x06height\x18\x04 \x01(\x05R\x06height\"\xa9\x02\n\x0b\x44ropContext\x12,\n\x06reader\x18\x01 \x01(\x0e\x32\x14.sifer.v1.DropReaderR\x06reader\x12)\n\x05scope\x18\x02 \x01(\x0e\x32\x13.sifer.v1.DropScopeR\x05scope\x12\x17\n\x07\x61pp_key\x18\x03 \x01(\tR\x06\x61ppKey\x12!\n\x0c\x65lement_role\x18\x04 \x01(\tR\x0b\x65lementRole\x12\x18\n\x07\x63ontent\x18\x05 \x01(\tR\x07\x63ontent\x12(\n\x06\x62ounds\x18\x06 \x01(\x0b\x32\x10.sifer.v1.BoundsR\x06\x62ounds\x12\x1e\n\nconfidence\x18\x07 \x01(\x02R\nconfidence\x12!\n\x0cwindow_title\x18\x08 \x01(\tR\x0bwindowTitle\"!\n\x0bInstruction\x12\x12\n\x04text\x18\x01 \x01(\tR\x04text\"\x9d\x01\n\x07\x46ixPlan\x12\x17\n\x07\x66ix_key\x18\x01 \x01(\tR\x06\x66ixKey\x12 \n\x0breplacement\x18\x02 \x01(\tR\x0breplacement\x12#\n\rexpect_prefix\x18\x03 \x01(\tR\x0c\x65xpectPrefix\x12\x16\n\x06\x65ngine\x18\x04 \x01(\tR\x06\x65ngine\x12\x1a\n\x08\x66\x61llback\x18\x05 \x01(\x08R\x08\x66\x61llback\"\x0c\n\nActionPlan\"\x0e\n\x0c\x41\x63tionResult\"\x10\n\x0e\x43onfirmRequest\"\x12\n\x10\x41uthorityRequest\"\x10\n\x0e\x43onsultRequest\"\x11\n\x0f\x44iagnosticDelta*y\n\nDropReader\x12\x1b\n\x17\x44ROP_READER_UNSPECIFIED\x10\x00\x12\x13\n\x0f\x44ROP_READER_DOM\x10\x01\x12\x1d\n\x19\x44ROP_READER_ACCESSIBILITY\x10\x02\x12\x1a\n\x16\x44ROP_READER_SCREENSHOT\x10\x03*h\n\tDropScope\x12\x1a\n\x16\x44ROP_SCOPE_UNSPECIFIED\x10\x00\x12\x14\n\x10\x44ROP_SCOPE_POINT\x10\x01\x12\x13\n\x0f\x44ROP_SCOPE_PAGE\x10\x02\x12\x14\n\x10\x44ROP_SCOPE_FOCUS\x10\x03\x42\x98\x01\n\x0c\x63om.sifer.v1B\x10InteractionProtoP\x01Z5github.com/mentor-sator/Sifer/gen/go/sifer/v1;siferv1\xa2\x02\x03SXX\xaa\x02\x08Sifer.V1\xca\x02\x08Sifer\\V1\xe2\x02\x14Sifer\\V1\\GPBMetadata\xea\x02\tSifer::V1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -32,22 +32,28 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'sifer.v1.interaction_pb2', 
 if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
   _globals['DESCRIPTOR']._serialized_options = b'\n\014com.sifer.v1B\020InteractionProtoP\001Z5github.com/mentor-sator/Sifer/gen/go/sifer/v1;siferv1\242\002\003SXX\252\002\010Sifer.V1\312\002\010Sifer\\V1\342\002\024Sifer\\V1\\GPBMetadata\352\002\tSifer::V1'
-  _globals['_DROPCONTEXT']._serialized_start=40
-  _globals['_DROPCONTEXT']._serialized_end=53
-  _globals['_INSTRUCTION']._serialized_start=55
-  _globals['_INSTRUCTION']._serialized_end=68
-  _globals['_FIXPLAN']._serialized_start=70
-  _globals['_FIXPLAN']._serialized_end=79
-  _globals['_ACTIONPLAN']._serialized_start=81
-  _globals['_ACTIONPLAN']._serialized_end=93
-  _globals['_ACTIONRESULT']._serialized_start=95
-  _globals['_ACTIONRESULT']._serialized_end=109
-  _globals['_CONFIRMREQUEST']._serialized_start=111
-  _globals['_CONFIRMREQUEST']._serialized_end=127
-  _globals['_AUTHORITYREQUEST']._serialized_start=129
-  _globals['_AUTHORITYREQUEST']._serialized_end=147
-  _globals['_CONSULTREQUEST']._serialized_start=149
-  _globals['_CONSULTREQUEST']._serialized_end=165
-  _globals['_DIAGNOSTICDELTA']._serialized_start=167
-  _globals['_DIAGNOSTICDELTA']._serialized_end=184
+  _globals['_DROPREADER']._serialized_start=724
+  _globals['_DROPREADER']._serialized_end=845
+  _globals['_DROPSCOPE']._serialized_start=847
+  _globals['_DROPSCOPE']._serialized_end=951
+  _globals['_BOUNDS']._serialized_start=40
+  _globals['_BOUNDS']._serialized_end=122
+  _globals['_DROPCONTEXT']._serialized_start=125
+  _globals['_DROPCONTEXT']._serialized_end=422
+  _globals['_INSTRUCTION']._serialized_start=424
+  _globals['_INSTRUCTION']._serialized_end=457
+  _globals['_FIXPLAN']._serialized_start=460
+  _globals['_FIXPLAN']._serialized_end=617
+  _globals['_ACTIONPLAN']._serialized_start=619
+  _globals['_ACTIONPLAN']._serialized_end=631
+  _globals['_ACTIONRESULT']._serialized_start=633
+  _globals['_ACTIONRESULT']._serialized_end=647
+  _globals['_CONFIRMREQUEST']._serialized_start=649
+  _globals['_CONFIRMREQUEST']._serialized_end=665
+  _globals['_AUTHORITYREQUEST']._serialized_start=667
+  _globals['_AUTHORITYREQUEST']._serialized_end=685
+  _globals['_CONSULTREQUEST']._serialized_start=687
+  _globals['_CONSULTREQUEST']._serialized_end=703
+  _globals['_DIAGNOSTICDELTA']._serialized_start=705
+  _globals['_DIAGNOSTICDELTA']._serialized_end=722
 # @@protoc_insertion_point(module_scope)

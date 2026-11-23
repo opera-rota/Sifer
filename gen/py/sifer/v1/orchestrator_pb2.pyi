@@ -6,6 +6,7 @@ isort:skip_file
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
 from sifer.v1 import envelope_pb2 as _envelope_pb2
+from sifer.v1 import interaction_pb2 as _interaction_pb2
 import builtins as _builtins
 import sys
 import typing as _typing
@@ -56,3 +57,47 @@ class EchoResponse(_message.Message):
     def WhichOneof(self, oneof_group: _Never) -> None: ...
 
 Global___EchoResponse: _TypeAlias = EchoResponse  # noqa: Y015
+
+@_typing.final
+class ResolveRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    DROP_CONTEXT_FIELD_NUMBER: _builtins.int
+    INSTRUCTION_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def drop_context(self) -> _interaction_pb2.DropContext: ...
+    @_builtins.property
+    def instruction(self) -> _interaction_pb2.Instruction: ...
+    def __init__(
+        self,
+        *,
+        drop_context: _interaction_pb2.DropContext | None = ...,
+        instruction: _interaction_pb2.Instruction | None = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["drop_context", b"drop_context", "instruction", b"instruction"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["drop_context", b"drop_context", "instruction", b"instruction"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+Global___ResolveRequest: _TypeAlias = ResolveRequest  # noqa: Y015
+
+@_typing.final
+class ResolveResponse(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    FIX_PLAN_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def fix_plan(self) -> _interaction_pb2.FixPlan: ...
+    def __init__(
+        self,
+        *,
+        fix_plan: _interaction_pb2.FixPlan | None = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["fix_plan", b"fix_plan"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["fix_plan", b"fix_plan"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+Global___ResolveResponse: _TypeAlias = ResolveResponse  # noqa: Y015

@@ -203,4 +203,23 @@ function Start-SiferIdentity {
     }
 }
 
-Export-ModuleMember -Function New-SiferDevSecrets, Get-SiferDevSecrets, Test-SiferDevSecrets, New-SiferIdentityKey, Get-SiferIdentityKey, New-SiferGrantKey, Get-SiferGrantKey, Start-SiferIdentity
+function Start-SiferOrchestrator {
+    $environment = [ordered]@{
+        SIFER_ENGINES_FILE         = Join-Path $script:Root 'infra\local\engines.json'
+        SIFER_ENGINE_KEY_ANTHROPIC = Get-SiferSecret -Name 'engine/anthropic'
+    }
+    Push-Location $script:Root
+    try {
+        foreach ($name in $environment.Keys) {
+            Set-Item "Env:$name" $environment[$name]
+        }
+        uv run --locked --all-packages sifer-orchestrator
+    } finally {
+        foreach ($name in $environment.Keys) {
+            Remove-Item "Env:$name" -ErrorAction SilentlyContinue
+        }
+        Pop-Location
+    }
+}
+
+Export-ModuleMember -Function New-SiferDevSecrets, Get-SiferDevSecrets, Test-SiferDevSecrets, New-SiferIdentityKey, Get-SiferIdentityKey, New-SiferGrantKey, Get-SiferGrantKey, Start-SiferIdentity, Start-SiferOrchestrator

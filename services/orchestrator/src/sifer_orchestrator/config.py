@@ -32,12 +32,18 @@ def _tls_files(prefix: str) -> TLSFiles | None:
     return TLSFiles(ca=Path(ca), cert=Path(cert), key=Path(key))
 
 
+def _optional_path(name: str) -> Path | None:
+    value = os.environ.get(name) or ""
+    return Path(value) if value else None
+
+
 @dataclass(frozen=True, slots=True)
 class Config:
     addr: str
     otlp_endpoint: str = DEFAULT_OTLP_ENDPOINT
     tls: TLSFiles | None = None
     shutdown_grace_s: float = 5.0
+    engines_file: Path | None = None
 
     @property
     def port(self) -> int:
@@ -49,4 +55,5 @@ class Config:
             addr=_host_port("SIFER_ORCHESTRATOR_ADDR", DEFAULT_ADDR),
             otlp_endpoint=_host_port("SIFER_OTLP_ENDPOINT", DEFAULT_OTLP_ENDPOINT),
             tls=_tls_files(TLS_PREFIX),
+            engines_file=_optional_path("SIFER_ENGINES_FILE"),
         )
