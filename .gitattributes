@@ -4,5 +4,6 @@
 *.png binary
 *.jpg binary
 *.ico binary
+*.webp binary
 gen/** linguist-generated=true
 packages/contracts-ts/src/gen/** linguist-generated=true

@@ -26,7 +26,7 @@ from sifer.v1 import envelope_pb2 as sifer_dot_v1_dot_envelope__pb2
 from sifer.v1 import interaction_pb2 as sifer_dot_v1_dot_interaction__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1bsifer/v1/orchestrator.proto\x12\x08sifer.v1\x1a\x17sifer/v1/envelope.proto\x1a\x1asifer/v1/interaction.proto\"=\n\x0b\x45\x63hoRequest\x12.\n\x08\x65nvelope\x18\x01 \x01(\x0b\x32\x12.sifer.v1.EnvelopeR\x08\x65nvelope\">\n\x0c\x45\x63hoResponse\x12.\n\x08\x65nvelope\x18\x01 \x01(\x0b\x32\x12.sifer.v1.EnvelopeR\x08\x65nvelope\"\x83\x01\n\x0eResolveRequest\x12\x38\n\x0c\x64rop_context\x18\x01 \x01(\x0b\x32\x15.sifer.v1.DropContextR\x0b\x64ropContext\x12\x37\n\x0binstruction\x18\x02 \x01(\x0b\x32\x15.sifer.v1.InstructionR\x0binstruction\"?\n\x0fResolveResponse\x12,\n\x08\x66ix_plan\x18\x01 \x01(\x0b\x32\x11.sifer.v1.FixPlanR\x07\x66ixPlan2\x8c\x01\n\x13OrchestratorService\x12\x35\n\x04\x45\x63ho\x12\x15.sifer.v1.EchoRequest\x1a\x16.sifer.v1.EchoResponse\x12>\n\x07Resolve\x12\x18.sifer.v1.ResolveRequest\x1a\x19.sifer.v1.ResolveResponseB\x99\x01\n\x0c\x63om.sifer.v1B\x11OrchestratorProtoP\x01Z5github.com/mentor-sator/Sifer/gen/go/sifer/v1;siferv1\xa2\x02\x03SXX\xaa\x02\x08Sifer.V1\xca\x02\x08Sifer\\V1\xe2\x02\x14Sifer\\V1\\GPBMetadata\xea\x02\tSifer::V1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1bsifer/v1/orchestrator.proto\x12\x08sifer.v1\x1a\x17sifer/v1/envelope.proto\x1a\x1asifer/v1/interaction.proto\"=\n\x0b\x45\x63hoRequest\x12.\n\x08\x65nvelope\x18\x01 \x01(\x0b\x32\x12.sifer.v1.EnvelopeR\x08\x65nvelope\">\n\x0c\x45\x63hoResponse\x12.\n\x08\x65nvelope\x18\x01 \x01(\x0b\x32\x12.sifer.v1.EnvelopeR\x08\x65nvelope\"\xa6\x01\n\x0eResolveRequest\x12\x38\n\x0c\x64rop_context\x18\x01 \x01(\x0b\x32\x15.sifer.v1.DropContextR\x0b\x64ropContext\x12\x37\n\x0binstruction\x18\x02 \x01(\x0b\x32\x15.sifer.v1.InstructionR\x0binstruction\x12!\n\x0cschema_major\x18\x03 \x01(\rR\x0bschemaMajor\"?\n\x0fResolveResponse\x12,\n\x08\x66ix_plan\x18\x01 \x01(\x0b\x32\x11.sifer.v1.FixPlanR\x07\x66ixPlan2\x8c\x01\n\x13OrchestratorService\x12\x35\n\x04\x45\x63ho\x12\x15.sifer.v1.EchoRequest\x1a\x16.sifer.v1.EchoResponse\x12>\n\x07Resolve\x12\x18.sifer.v1.ResolveRequest\x1a\x19.sifer.v1.ResolveResponseB\x99\x01\n\x0c\x63om.sifer.v1B\x11OrchestratorProtoP\x01Z5github.com/mentor-sator/Sifer/gen/go/sifer/v1;siferv1\xa2\x02\x03SXX\xaa\x02\x08Sifer.V1\xca\x02\x08Sifer\\V1\xe2\x02\x14Sifer\\V1\\GPBMetadata\xea\x02\tSifer::V1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -39,9 +39,9 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_ECHORESPONSE']._serialized_start=157
   _globals['_ECHORESPONSE']._serialized_end=219
   _globals['_RESOLVEREQUEST']._serialized_start=222
-  _globals['_RESOLVEREQUEST']._serialized_end=353
-  _globals['_RESOLVERESPONSE']._serialized_start=355
-  _globals['_RESOLVERESPONSE']._serialized_end=418
-  _globals['_ORCHESTRATORSERVICE']._serialized_start=421
-  _globals['_ORCHESTRATORSERVICE']._serialized_end=561
+  _globals['_RESOLVEREQUEST']._serialized_end=388
+  _globals['_RESOLVERESPONSE']._serialized_start=390
+  _globals['_RESOLVERESPONSE']._serialized_end=453
+  _globals['_ORCHESTRATORSERVICE']._serialized_start=456
+  _globals['_ORCHESTRATORSERVICE']._serialized_end=596
 # @@protoc_insertion_point(module_scope)

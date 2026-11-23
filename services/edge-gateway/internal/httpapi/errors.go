@@ -13,17 +13,22 @@ func writeError(c *gin.Context, httpStatus int, code, message string) {
 }
 
 func writeUpstreamError(c *gin.Context, err error) {
+	httpStatus, payload := upstreamError(err)
+	c.JSON(httpStatus, payload)
+}
+
+func upstreamError(err error) (int, gin.H) {
 	upstream := status.Convert(err)
 	switch upstream.Code() {
 	case codes.InvalidArgument:
-		writeError(c, http.StatusBadRequest, "invalid_argument", upstream.Message())
+		return http.StatusBadRequest, gin.H{"error": "invalid_argument", "message": upstream.Message()}
 	case codes.FailedPrecondition:
-		writeError(c, http.StatusConflict, "failed_precondition", upstream.Message())
+		return http.StatusConflict, gin.H{"error": "failed_precondition", "message": upstream.Message()}
 	case codes.DeadlineExceeded:
-		writeError(c, http.StatusGatewayTimeout, "upstream_timeout", "orchestrator did not answer in time")
+		return http.StatusGatewayTimeout, gin.H{"error": "upstream_timeout", "message": "orchestrator did not answer in time"}
 	case codes.Unavailable:
-		writeError(c, http.StatusServiceUnavailable, "upstream_unavailable", "orchestrator is unavailable")
+		return http.StatusServiceUnavailable, gin.H{"error": "upstream_unavailable", "message": "orchestrator is unavailable"}
 	default:
-		writeError(c, http.StatusBadGateway, "upstream_error", "orchestrator failed")
+		return http.StatusBadGateway, gin.H{"error": "upstream_error", "message": "orchestrator failed"}
 	}
 }

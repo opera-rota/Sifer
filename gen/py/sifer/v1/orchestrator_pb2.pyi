@@ -64,6 +64,8 @@ class ResolveRequest(_message.Message):
 
     DROP_CONTEXT_FIELD_NUMBER: _builtins.int
     INSTRUCTION_FIELD_NUMBER: _builtins.int
+    SCHEMA_MAJOR_FIELD_NUMBER: _builtins.int
+    schema_major: _builtins.int
     @_builtins.property
     def drop_context(self) -> _interaction_pb2.DropContext: ...
     @_builtins.property
@@ -73,10 +75,11 @@ class ResolveRequest(_message.Message):
         *,
         drop_context: _interaction_pb2.DropContext | None = ...,
         instruction: _interaction_pb2.Instruction | None = ...,
+        schema_major: _builtins.int = ...,
     ) -> None: ...
     _HasFieldArgType: _TypeAlias = _typing.Literal["drop_context", b"drop_context", "instruction", b"instruction"]  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["drop_context", b"drop_context", "instruction", b"instruction"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["drop_context", b"drop_context", "instruction", b"instruction", "schema_major", b"schema_major"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
     def WhichOneof(self, oneof_group: _Never) -> None: ...
 

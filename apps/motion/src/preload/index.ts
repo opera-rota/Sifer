@@ -12,9 +12,12 @@ import {
   orbStateChannel,
   panelCloseChannel,
   panelContentChannel,
+  panelCopyChannel,
   panelCurrentChannel,
+  panelFixChannel,
   type OrbState,
   type PanelContent,
+  type ProposalOutcome,
   type SiferBridge,
   type SignedInState,
   type SignInResult,
@@ -54,6 +57,9 @@ const bridge: SiferBridge = {
     onContent: (listener: (content: PanelContent) => void) =>
       subscribe(panelContentChannel, listener),
     close: () => ipcRenderer.send(panelCloseChannel),
+    fix: (instruction: string) =>
+      ipcRenderer.invoke(panelFixChannel, instruction) as Promise<ProposalOutcome>,
+    copy: (text: string) => ipcRenderer.send(panelCopyChannel, text),
   },
 };
 

@@ -1,7 +1,7 @@
 import type { BrowserWindowConstructorOptions, Rectangle } from 'electron';
 import { hardenedWebPreferences } from './security';
 
-export const panelSize = { width: 380, height: 260 };
+export const panelSize = { width: 400, height: 330 };
 export const panelGap = 12;
 
 export function panelWindowOptions(preload: string): BrowserWindowConstructorOptions {
@@ -18,7 +18,9 @@ export function panelWindowOptions(preload: string): BrowserWindowConstructorOpt
     alwaysOnTop: true,
     show: false,
     title: 'Sifer',
-    backgroundColor: '#061c20',
+    transparent: true,
+    hasShadow: false,
+    backgroundColor: '#00000000',
     webPreferences: hardenedWebPreferences(preload),
   };
 }

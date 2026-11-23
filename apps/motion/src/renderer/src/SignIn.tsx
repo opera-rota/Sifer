@@ -1,6 +1,21 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import '@fontsource-variable/exo-2';
 import type { SignedInState, SignInFailure } from '../../shared/bridge';
+import { Aurora } from './Aurora';
+import {
+  Chevron,
+  Envelope,
+  Eye,
+  EyeOff,
+  GoogleMark,
+  Lock,
+  Shield,
+  SignInArrow,
+  SignOutArrow,
+} from './Glyphs';
 import { describeRuntime } from './versions';
+import brand from './assets/brand.png';
+import mantis from './assets/mantis.webp';
 import './signin.css';
 
 const messages: Record<SignInFailure, string> = {
@@ -12,10 +27,45 @@ const messages: Record<SignInFailure, string> = {
   refused: 'Google could not complete the sign-in. Try again.',
 };
 
+function Brand() {
+  return (
+    <header className="brand">
+      <img className="brand-tile" src={brand} alt="" draggable={false} />
+      <div className="brand-words">
+        <span className="brand-name">Sifer</span>
+        <span className="brand-product">Motion</span>
+      </div>
+    </header>
+  );
+}
+
+function Runtime() {
+  return (
+    <footer className="runtime">
+      <span className="runtime-rule" />
+      <Shield className="runtime-shield" />
+      <span className="runtime-rule" />
+      <p>{describeRuntime(window.sifer.versions)}</p>
+    </footer>
+  );
+}
+
+function Scene({ children }: { children: ReactNode }) {
+  return (
+    <div className="scene">
+      <Aurora />
+      <img className="mantis" src={mantis} alt="" draggable={false} />
+      <Brand />
+      {children}
+    </div>
+  );
+}
+
 export function SignIn() {
   const [state, setState] = useState<SignedInState | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [reveal, setReveal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [waitingForGoogle, setWaitingForGoogle] = useState(false);
@@ -34,6 +84,7 @@ export function SignIn() {
       setBusy(false);
       if (result.ok) {
         setPassword('');
+        setReveal(false);
         setState(result.state);
         return;
       }
@@ -64,80 +115,95 @@ export function SignIn() {
 
   if (state?.status === 'signed-in') {
     return (
-      <main className="panel">
-        <h1>Sifer</h1>
-        <p className="who">Signed in as {state.email}</p>
-        <button type="button" onClick={() => void signOut()} disabled={busy}>
-          Sign out
-        </button>
-        <p className="runtime">{describeRuntime(window.sifer.versions)}</p>
-      </main>
+      <Scene>
+        <h1 className="headline">
+          Welcome to <strong>Sifer</strong>
+        </h1>
+        <main className="glass">
+          <p className="signed-label">Signed in as</p>
+          <p className="signed-email">{state.email}</p>
+          <p className="signed-hint">
+            Drag the orb onto anything on your screen and tell Sifer what to do.
+          </p>
+          <button type="button" className="primary" onClick={() => void signOut()} disabled={busy}>
+            <SignOutArrow className="primary-icon" />
+            <span>Sign out</span>
+          </button>
+          <Runtime />
+        </main>
+      </Scene>
     );
   }
 
   return (
-    <main className="panel">
-      <h1>Sign in to Sifer</h1>
-      <button
-        type="button"
-        className="google"
-        onClick={() => void continueWithGoogle()}
-        disabled={busy}
-      >
-        <GoogleMark />
-        {waitingForGoogle ? 'Finish signing in in your browser...' : 'Continue with Google'}
-      </button>
-      <div className="divider" role="separator">
-        <span>or</span>
-      </div>
-      <form onSubmit={(event) => void submit(event)}>
-        <label htmlFor="email">Email</label>
-        <input
-          id="email"
-          type="email"
-          autoComplete="username"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
+    <Scene>
+      <h1 className="headline">
+        Sign in to <strong>Sifer</strong>
+      </h1>
+      <main className="glass">
+        <button
+          type="button"
+          className="google"
+          onClick={() => void continueWithGoogle()}
           disabled={busy}
-        />
-        <label htmlFor="password">Password</label>
-        <input
-          id="password"
-          type="password"
-          autoComplete="current-password"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          disabled={busy}
-        />
-        <button type="submit" disabled={busy}>
-          {busy && !waitingForGoogle ? 'Signing in...' : 'Sign in'}
+        >
+          <GoogleMark />
+          <span>
+            {waitingForGoogle ? 'Finish signing in in your browser' : 'Continue with Google'}
+          </span>
         </button>
-        {error ? <p className="error">{error}</p> : null}
-      </form>
-      <p className="runtime">{describeRuntime(window.sifer.versions)}</p>
-    </main>
-  );
-}
-
-function GoogleMark() {
-  return (
-    <svg className="mark" viewBox="0 0 18 18" aria-hidden="true">
-      <path
-        fill="#4285F4"
-        d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"
-      />
-      <path
-        fill="#34A853"
-        d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18z"
-      />
-      <path
-        fill="#FBBC05"
-        d="M3.97 10.72a5.41 5.41 0 0 1 0-3.44V4.95H.96a9 9 0 0 0 0 8.1l3.01-2.33z"
-      />
-      <path
-        fill="#EA4335"
-        d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"
-      />
-    </svg>
+        <div className="divider" role="separator">
+          <span className="divider-gem">or</span>
+        </div>
+        <form onSubmit={(event) => void submit(event)}>
+          <label htmlFor="email">
+            <Envelope />
+            Email
+          </label>
+          <div className="field">
+            <input
+              id="email"
+              type="email"
+              autoComplete="username"
+              spellCheck={false}
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              disabled={busy}
+            />
+            <Envelope className="field-icon" />
+          </div>
+          <label htmlFor="password">
+            <Lock />
+            Password
+          </label>
+          <div className="field">
+            <input
+              id="password"
+              type={reveal ? 'text' : 'password'}
+              autoComplete="current-password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              disabled={busy}
+            />
+            <button
+              type="button"
+              className="field-toggle"
+              aria-label={reveal ? 'Hide password' : 'Show password'}
+              onClick={() => setReveal((shown) => !shown)}
+            >
+              {reveal ? <Eye /> : <EyeOff />}
+            </button>
+          </div>
+          <button type="submit" className="primary" disabled={busy}>
+            <Chevron className="primary-chevron left" />
+            <SignInArrow className="primary-icon" />
+            <span>{busy && !waitingForGoogle ? 'Signing in' : 'Sign in'}</span>
+            <Chevron className="primary-chevron" />
+          </button>
+          {error ? <p className="error">{error}</p> : null}
+        </form>
+        <Runtime />
+      </main>
+    </Scene>
   );
 }

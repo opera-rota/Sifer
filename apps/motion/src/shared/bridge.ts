@@ -55,10 +55,23 @@ export interface PanelContent {
   readonly outcome: ReadOutcome;
 }
 
+export type FixFailure =
+  'nothing' | 'signed-out' | 'outdated' | 'refused' | 'unavailable' | 'timeout';
+
+export interface Proposal {
+  readonly replacement: string;
+  readonly engine: string;
+  readonly fallback: boolean;
+}
+
+export type ProposalOutcome = { ok: true; proposal: Proposal } | { ok: false; reason: FixFailure };
+
 export interface PanelControls {
   current(): Promise<PanelContent | null>;
   onContent(listener: (content: PanelContent) => void): () => void;
   close(): void;
+  fix(instruction: string): Promise<ProposalOutcome>;
+  copy(text: string): void;
 }
 
 export interface SiferBridge {
@@ -73,6 +86,8 @@ export const orbDropChannel = 'sifer:orb-drop';
 export const panelCurrentChannel = 'sifer:panel-current';
 export const panelContentChannel = 'sifer:panel-content';
 export const panelCloseChannel = 'sifer:panel-close';
+export const panelFixChannel = 'sifer:panel-fix';
+export const panelCopyChannel = 'sifer:panel-copy';
 export const orbStateChannel = 'sifer:orb-state';
 export const authStateChannel = 'sifer:auth-state';
 export const authSignInChannel = 'sifer:auth-sign-in';

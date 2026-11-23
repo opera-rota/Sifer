@@ -58,6 +58,9 @@ extension:
 icons:
     node tools/icons.mjs
 
+art:
+    node tools/art.mjs
+
 motion-package:
     pnpm --filter @sifer/motion package
 

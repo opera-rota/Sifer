@@ -113,6 +113,7 @@ type ResolveRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	DropContext   *DropContext           `protobuf:"bytes,1,opt,name=drop_context,json=dropContext,proto3" json:"drop_context,omitempty"`
 	Instruction   *Instruction           `protobuf:"bytes,2,opt,name=instruction,proto3" json:"instruction,omitempty"`
+	SchemaMajor   uint32                 `protobuf:"varint,3,opt,name=schema_major,json=schemaMajor,proto3" json:"schema_major,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -159,6 +160,13 @@ func (x *ResolveRequest) GetInstruction() *Instruction {
 		return x.Instruction
 	}
 	return nil
+}
+
+func (x *ResolveRequest) GetSchemaMajor() uint32 {
+	if x != nil {
+		return x.SchemaMajor
+	}
+	return 0
 }
 
 type ResolveResponse struct {
@@ -213,10 +221,11 @@ const file_sifer_v1_orchestrator_proto_rawDesc = "" +
 	"\vEchoRequest\x12.\n" +
 	"\benvelope\x18\x01 \x01(\v2\x12.sifer.v1.EnvelopeR\benvelope\">\n" +
 	"\fEchoResponse\x12.\n" +
-	"\benvelope\x18\x01 \x01(\v2\x12.sifer.v1.EnvelopeR\benvelope\"\x83\x01\n" +
+	"\benvelope\x18\x01 \x01(\v2\x12.sifer.v1.EnvelopeR\benvelope\"\xa6\x01\n" +
 	"\x0eResolveRequest\x128\n" +
 	"\fdrop_context\x18\x01 \x01(\v2\x15.sifer.v1.DropContextR\vdropContext\x127\n" +
-	"\vinstruction\x18\x02 \x01(\v2\x15.sifer.v1.InstructionR\vinstruction\"?\n" +
+	"\vinstruction\x18\x02 \x01(\v2\x15.sifer.v1.InstructionR\vinstruction\x12!\n" +
+	"\fschema_major\x18\x03 \x01(\rR\vschemaMajor\"?\n" +
 	"\x0fResolveResponse\x12,\n" +
 	"\bfix_plan\x18\x01 \x01(\v2\x11.sifer.v1.FixPlanR\afixPlan2\x8c\x01\n" +
 	"\x13OrchestratorService\x125\n" +

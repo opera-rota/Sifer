@@ -1,7 +1,7 @@
 import type { BrowserWindowConstructorOptions } from 'electron';
 import { hardenedWebPreferences } from './security';
 
-export const signInSize = { width: 400, height: 560 };
+export const signInSize = { width: 480, height: 720 };
 
 export function signInWindowOptions(preload: string): BrowserWindowConstructorOptions {
   return {
@@ -13,9 +13,9 @@ export function signInWindowOptions(preload: string): BrowserWindowConstructorOp
     fullscreenable: false,
     show: false,
     center: true,
-    title: 'Sign in to Sifer',
+    title: 'Sifer Motion',
     autoHideMenuBar: true,
-    backgroundColor: '#061c20',
+    backgroundColor: '#020b0c',
     webPreferences: hardenedWebPreferences(preload),
   };
 }

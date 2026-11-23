@@ -21,6 +21,7 @@ message EchoResponse {
 message ResolveRequest {
   DropContext drop_context = 1;
   Instruction instruction = 2;
+  uint32 schema_major = 3;
 }
 
 message ResolveResponse {

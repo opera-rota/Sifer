@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import {
   app,
   BrowserWindow,
+  clipboard,
   desktopCapturer,
   dialog,
   globalShortcut,
@@ -30,9 +31,12 @@ import {
   orbStateChannel,
   panelCloseChannel,
   panelContentChannel,
+  panelCopyChannel,
   panelCurrentChannel,
+  panelFixChannel,
   type ImageScope,
   type PanelContent,
+  type ProposalOutcome,
   type ReadOutcome,
   type ReadScope,
   type SignedInState,
@@ -43,6 +47,7 @@ import { createDrag, frameInterval, type Point } from './drag';
 import { createDropReader, dropPoint } from './drop';
 import { createGoogleSignIn, GoogleSignInError } from './google';
 import { createIdentityClient, IdentityError } from './identity';
+import { createInteractionClient } from './interactions';
 import { createSessionStore, type SecretFile } from './secrets';
 import { createBridge, type Bridge } from './bridge/server';
 import { createTokenStore } from './bridge/token';
@@ -601,6 +606,34 @@ if (!app.requestSingleInstanceLock()) {
       }
     });
     ipcMain.handle(panelCurrentChannel, () => panelContent);
+    const interactions = createInteractionClient({
+      baseUrl: config.gatewayUrl,
+      fetch: (url, init) => fetch(url, init),
+      accessToken: async () => (await sessions?.accessToken()) ?? null,
+    });
+    ipcMain.handle(
+      panelFixChannel,
+      async (event, instruction: unknown): Promise<ProposalOutcome> => {
+        if (!panel || event.sender !== panel.webContents || !panelContent) {
+          return { ok: false, reason: 'nothing' };
+        }
+        if (typeof instruction !== 'string') {
+          return { ok: false, reason: 'nothing' };
+        }
+        const outcome = await interactions.propose(panelContent, instruction);
+        console.log(
+          outcome.ok
+            ? `fix proposed by ${outcome.proposal.engine}${outcome.proposal.fallback ? ' (fallback)' : ''}`
+            : `fix failed: ${outcome.reason}`,
+        );
+        return outcome;
+      },
+    );
+    ipcMain.on(panelCopyChannel, (event, text: unknown) => {
+      if (panel && event.sender === panel.webContents && typeof text === 'string') {
+        clipboard.writeText(text);
+      }
+    });
     ipcMain.on(panelCloseChannel, (event) => {
       if (panel && event.sender === panel.webContents) {
         panel.hide();
